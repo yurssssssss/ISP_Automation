@@ -1,0 +1,82 @@
+# Live stack for an always-on PC on the office LAN (or a VPS).
+#
+#   1. copy .env.production.example to .env.production and fill it in
+#   2. docker compose --env-file .env.production -f compose.production.yaml up -d --build
+#
+# The app reaches the MikroTik directly over the LAN. Customers and PayMongo
+# reach the app through the Cloudflare Tunnel, which only makes outgoing
+# connections — no port is opened on the router or the PC.
+#
+# Updating after a code change: run step 2 again (migrations run on start).
+# --env-file matters: it feeds the same values to MySQL below, and stops
+# Compose from reading the local development .env instead.
+
+x-app: &app
+  image: isp-automation:production
+  build:
+    context: .
+    args:
+      INSTALL_DEV: "false"
+  env_file: ${ISP_ENV_FILE:-.env.production}
+  restart: unless-stopped
+  depends_on:
+    db:
+      condition: service_healthy
+
+services:
+  app:
+    <<: *app
+    # Only this PC can open it directly (http://localhost:8080); everyone
+    # else comes in through the tunnel.
+    ports:
+      - "127.0.0.1:${APP_PORT:-8080}:80"
+    healthcheck:
+      test: ["CMD", "curl", "-fsS", "http://localhost/up"]
+      interval: 30s
+      timeout: 5s
+      retries: 5
+      start_period: 90s
+
+  # Daily billing tasks (routes/console.php) and the dashboard heartbeat.
+  scheduler:
+    <<: *app
+    environment:
+      CONTAINER_ROLE: worker
+    command: ["php", "artisan", "schedule:work"]
+
+  # Cut / reconnect changes to the MikroTik, and the emails.
+  queue:
+    <<: *app
+    environment:
+      CONTAINER_ROLE: worker
+    command: ["php", "artisan", "queue:work", "--tries=3", "--backoff=30", "--max-time=3600"]
+
+  db:
+    image: mysql:8.4
+    restart: unless-stopped
+    environment:
+      MYSQL_DATABASE: ${DB_DATABASE:?set DB_DATABASE in .env.production}
+      MYSQL_USER: ${DB_USERNAME:?set DB_USERNAME in .env.production}
+      MYSQL_PASSWORD: ${DB_PASSWORD:?set DB_PASSWORD in .env.production}
+      MYSQL_ROOT_PASSWORD: ${DB_ROOT_PASSWORD:?set DB_ROOT_PASSWORD in .env.production}
+    volumes:
+      - db-data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD-SHELL", "mysqladmin ping --protocol=tcp -h 127.0.0.1 -u\"$$MYSQL_USER\" -p\"$$MYSQL_PASSWORD\""]
+      interval: 5s
+      timeout: 5s
+      retries: 30
+
+  # Public https address for the app (TUNNEL_TOKEN from the Cloudflare dashboard).
+  tunnel:
+    image: cloudflare/cloudflared:2026.9.3
+    restart: unless-stopped
+    command: ["tunnel", "--no-autoupdate", "run"]
+    environment:
+      TUNNEL_TOKEN: ${TUNNEL_TOKEN:?set TUNNEL_TOKEN in .env.production}
+    depends_on:
+      app:
+        condition: service_healthy
+
+volumes:
+  db-data:

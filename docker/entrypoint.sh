@@ -18,10 +18,21 @@ wait_for_database() {
 }
 
 # Every container gets the same .env (the host's is excluded by
-# .dockerignore); values set in compose.yaml take precedence over it. The
-# workers need it too: APP_NAME sets the cache prefix and the emails' sender.
+# .dockerignore); values set in compose / env_file take precedence over it.
+# The workers need it too: APP_NAME sets the cache prefix and the emails' sender.
 if [ ! -f .env ]; then
     cp .env.example .env
+fi
+
+if [ "$APP_ENV" = "production" ]; then
+    # Each container generating its own key would break sessions and anything
+    # encrypted, and a live site must never run on a guessable admin password.
+    for name in APP_KEY ADMIN_PASSWORD DB_PASSWORD; do
+        if [ -z "$(printenv "$name")" ]; then
+            echo "Set $name in .env.production before starting (see .env.production.example)." >&2
+            exit 1
+        fi
+    done
 fi
 
 if [ "${CONTAINER_ROLE:-app}" = "app" ]; then
@@ -32,9 +43,6 @@ if [ "${CONTAINER_ROLE:-app}" = "app" ]; then
     wait_for_database
     php artisan migrate --force --no-interaction
     php artisan db:seed --force --no-interaction
-    php artisan config:clear --no-interaction
-
-    chown -R www-data:www-data storage bootstrap/cache
 else
     wait_for_database
     # Until the app container has created the tables.
@@ -42,5 +50,13 @@ else
         sleep 2
     done
 fi
+
+if [ "$APP_ENV" = "production" ]; then
+    php artisan optimize --no-interaction
+else
+    php artisan optimize:clear --no-interaction >/dev/null
+fi
+
+chown -R www-data:www-data storage bootstrap/cache
 
 exec "$@"

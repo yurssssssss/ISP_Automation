@@ -25,6 +25,19 @@ x-app: &app
     MAIL_FROM_ADDRESS: no-reply@isp.test
     ADMIN_EMAIL: admin@isp.test
     ADMIN_PASSWORD: "Admin#12345"
+    # From your local .env (Compose reads it), so the demo can drive your
+    # real router and PayMongo test account. Empty = feature off.
+    MIKROTIK_HOST: ${MIKROTIK_HOST:-192.168.88.1}
+    MIKROTIK_PORT: ${MIKROTIK_PORT:-8728}
+    MIKROTIK_SSL: ${MIKROTIK_SSL:-false}
+    MIKROTIK_USERNAME: ${MIKROTIK_USERNAME:-billing}
+    MIKROTIK_PASSWORD: ${MIKROTIK_PASSWORD:-}
+    MIKROTIK_TEST_USER: ${MIKROTIK_TEST_USER:-}
+    ISP_SUSPEND_MODE: ${ISP_SUSPEND_MODE:-disable}
+    PAYMONGO_SECRET_KEY: ${PAYMONGO_SECRET_KEY:-}
+    PAYMONGO_PUBLIC_KEY: ${PAYMONGO_PUBLIC_KEY:-}
+    PAYMONGO_WEBHOOK_SECRET: ${PAYMONGO_WEBHOOK_SECRET:-}
+    PAYMONGO_METHODS: ${PAYMONGO_METHODS:-qrph,gcash,paymaya,card}
   restart: unless-stopped
 
 services:
