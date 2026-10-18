@@ -7,6 +7,20 @@ window.addEventListener('pageshow', function (event) {
     }
 });
 
+// Show / hide password: <button data-password-toggle="{input id}" aria-pressed="false">.
+document.querySelectorAll('[data-password-toggle]').forEach(function (button) {
+    var input = document.getElementById(button.dataset.passwordToggle);
+    if (!input) {
+        return;
+    }
+    button.addEventListener('click', function () {
+        var showing = input.type === 'password';
+        input.type = showing ? 'text' : 'password';
+        button.setAttribute('aria-pressed', showing ? 'true' : 'false');
+        button.setAttribute('aria-label', showing ? 'Hide password' : 'Show password');
+    });
+});
+
 // Live email check for inputs marked data-email-check="existing|new". Runs
 // when typing pauses or the field is left, and shows one line under it: an
 // incomplete address, a provider typo ("Did you mean …@gmail.com?"), an

@@ -7,11 +7,12 @@ use App\Http\Controllers\Auth\EmailVerificationController;
 use App\Http\Controllers\Auth\LoginController;
 use App\Http\Controllers\Auth\PasswordResetController;
 use App\Http\Controllers\EmailCheckController;
+use App\Http\Controllers\LandingController;
 use App\Http\Controllers\PayMongoWebhookController;
 use App\Http\Controllers\PortalController;
 use Illuminate\Support\Facades\Route;
 
-Route::redirect('/', '/home');
+Route::get('/', LandingController::class)->name('landing');
 
 // PayMongo → us (signature-checked; CSRF-exempt in bootstrap/app.php).
 Route::post('/webhooks/paymongo', PayMongoWebhookController::class)->middleware('throttle:120,1')->name('webhooks.paymongo');

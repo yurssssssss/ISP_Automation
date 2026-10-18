@@ -26,6 +26,17 @@ return [
     'suspend_mode' => env('ISP_SUSPEND_MODE', 'disable'),
     'suspended_profile' => env('ISP_SUSPENDED_PROFILE', 'suspended'),
 
+    /*
+    | Office contact details shown on the public front page. Leave any of
+    | them empty to hide that line.
+    */
+    'contact' => [
+        'phone' => env('ISP_CONTACT_PHONE'),
+        'email' => env('ISP_CONTACT_EMAIL'),
+        'address' => env('ISP_CONTACT_ADDRESS'),
+        'hours' => env('ISP_OFFICE_HOURS'),
+    ],
+
     'mikrotik' => [
         'host' => env('MIKROTIK_HOST', '192.168.88.1'),
         // 8728 = API, 8729 = API-SSL (set MIKROTIK_SSL=true)
