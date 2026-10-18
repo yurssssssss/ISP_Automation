@@ -1,0 +1,16 @@
+.git
+.env
+.env.backup
+.env.production
+vendor
+node_modules
+public/hot
+public/storage
+storage/logs/*
+storage/framework/cache/data/*
+storage/framework/sessions/*
+storage/framework/views/*
+bootstrap/cache/*.php
+.phpunit.cache
+.claude
+.mcp.json
