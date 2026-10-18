@@ -462,3 +462,5 @@ a.contact-item:hover, a.contact-item:focus { border-color: var(--brand); color: 
 .admin-plan dd { margin: 0; text-align: right; font-weight: 600; }
 
 .form-section + .form-section { margin-top: 1.5rem; }
+.admin code { color: var(--brand-700); background: var(--brand-50); padding: .05rem .35rem; border-radius: .35rem; }
+@media (min-width: 1200px) { .border-start-xl { border-left: 1px solid var(--line); } }

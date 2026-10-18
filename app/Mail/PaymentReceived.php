@@ -14,11 +14,12 @@ class PaymentReceived extends Mailable implements ShouldQueue
 {
     use Queueable, SerializesModels;
 
-    public function __construct(public Payment $payment) {}
+    /** $reconnected: this payment turned a suspended connection back on. */
+    public function __construct(public Payment $payment, public bool $reconnected = false) {}
 
     public function envelope(): Envelope
     {
-        return new Envelope(subject: 'Payment received — '.$this->payment->invoice->number);
+        return new Envelope(subject: ($this->reconnected ? "You're back online — " : 'Payment received — ').$this->payment->invoice->number);
     }
 
     public function content(): Content

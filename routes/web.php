@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\Admin\AutomationController;
 use App\Http\Controllers\Admin\ClientController;
 use App\Http\Controllers\Admin\DashboardController;
 use App\Http\Controllers\Admin\PlanController;
@@ -45,6 +46,7 @@ Route::middleware(['auth', 'active'])->group(function () {
             Route::post('/subscriptions/{subscription}/suspend', [DashboardController::class, 'suspend'])->name('subscriptions.suspend');
             Route::post('/subscriptions/{subscription}/restore', [DashboardController::class, 'restore'])->name('subscriptions.restore');
             Route::post('/invoices/{invoice}/cash', [DashboardController::class, 'recordCash'])->name('invoices.cash');
+            Route::post('/automation/run', [AutomationController::class, 'run'])->middleware('throttle:6,1')->name('automation.run');
             Route::get('/clients/create', [ClientController::class, 'create'])->name('clients.create');
             Route::post('/clients', [ClientController::class, 'store'])->name('clients.store');
             Route::get('/plans', [PlanController::class, 'index'])->name('plans.index');

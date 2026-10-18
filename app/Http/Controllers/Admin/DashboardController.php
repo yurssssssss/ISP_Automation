@@ -9,6 +9,7 @@ use App\Models\Payment;
 use App\Models\RouterLog;
 use App\Models\Subscription;
 use App\Services\Billing;
+use App\Support\Automation;
 use Illuminate\Http\Request;
 
 class DashboardController extends Controller
@@ -32,6 +33,7 @@ class DashboardController extends Controller
                 ->get(),
             'openInvoices' => Invoice::open()->with('subscription.client')->orderBy('due_date')->limit(50)->get(),
             'routerLogs' => RouterLog::latest('id')->limit(15)->get(),
+            'automation' => Automation::status(),
         ]);
     }
 
@@ -59,7 +61,7 @@ class DashboardController extends Controller
             'reference' => ['nullable', 'string', 'max:100', 'unique:payments,reference'],
         ]);
 
-        $billing->recordPayment($invoice, (float) $data['amount'], 'cash', 'manual', $data['reference'] ?: null, now(), $request->user());
+        $billing->recordPayment($invoice, (float) $data['amount'], 'cash', 'manual', $data['reference'] ?? null, now(), $request->user());
 
         return back()->with('status', 'Payment of ₱'.number_format((float) $data['amount'], 2)." recorded for {$invoice->number}.");
     }

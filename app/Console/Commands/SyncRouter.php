@@ -4,6 +4,7 @@ namespace App\Console\Commands;
 
 use App\Jobs\SyncRouterAccess;
 use App\Models\Subscription;
+use App\Support\Automation;
 use Illuminate\Console\Attributes\Description;
 use Illuminate\Console\Attributes\Signature;
 use Illuminate\Console\Command;
@@ -17,6 +18,7 @@ class SyncRouter extends Command
         $query = Subscription::query()->when($this->argument('username'), fn ($q, $u) => $q->where('username', $u));
 
         if (! $query->exists()) {
+            $this->recordFullSync('No subscriptions to check.');
             $this->warn('No matching subscriptions.');
 
             return self::FAILURE;
@@ -32,10 +34,20 @@ class SyncRouter extends Command
             }
         }
 
+        $this->recordFullSync('Checked '.$query->count().' account(s) on the router.');
+
         if (! $this->option('now')) {
             $this->info('Queued. Run `php artisan queue:work` to process.');
         }
 
         return self::SUCCESS;
+    }
+
+    /** Only the nightly run over every account counts as the reconcile task. */
+    private function recordFullSync(string $summary): void
+    {
+        if (! $this->argument('username')) {
+            Automation::record('mikrotik:sync', $summary);
+        }
     }
 }

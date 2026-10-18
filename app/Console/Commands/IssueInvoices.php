@@ -4,6 +4,7 @@ namespace App\Console\Commands;
 
 use App\Models\Subscription;
 use App\Services\Billing;
+use App\Support\Automation;
 use Illuminate\Console\Attributes\Description;
 use Illuminate\Console\Attributes\Signature;
 use Illuminate\Console\Command;
@@ -22,11 +23,17 @@ class IssueInvoices extends Command
             ->whereDate('next_due_date', '<=', $until)
             ->chunkById(200, function ($subscriptions) use ($billing, &$count) {
                 foreach ($subscriptions as $subscription) {
-                    $count += (int) $billing->issueInvoice($subscription)->wasRecentlyCreated;
+                    $invoice = $billing->issueInvoice($subscription);
+                    if ($invoice->wasRecentlyCreated) {
+                        $billing->sendNewInvoice($invoice);
+                        $count++;
+                    }
                 }
             });
 
-        $this->info("Issued {$count} invoice(s).");
+        $summary = "Issued {$count} invoice(s).";
+        Automation::record('billing:issue-invoices', $summary);
+        $this->info($summary);
 
         return self::SUCCESS;
     }

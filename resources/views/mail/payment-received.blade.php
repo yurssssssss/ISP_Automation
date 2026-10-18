@@ -3,6 +3,10 @@
 
 We received your payment of **₱{{ number_format((float) $payment->amount, 2) }}** for invoice {{ $invoice->number }}.
 
+@if ($reconnected)
+**Your internet is back on.** It reconnects automatically — usually within a minute. If it doesn't, restart your router.
+@endif
+
 <x-mail::table>
 | | |
 |:--|--:|

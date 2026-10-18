@@ -15,7 +15,7 @@ Your internet bill for **{{ $subscription->plan->name }}** is due on **{{ $invoi
 Pay now
 </x-mail::button>
 
-To avoid interruption, please pay on or before the due date{{ $graceDays ? ' (service is paused '.$graceDays.' day'.($graceDays > 1 ? 's' : '').' after it)' : '' }}.
+To avoid interruption, please pay on or before the due date. If it's still unpaid, service pauses on {{ $pausesOn->format('F j') }}.
 
 Thanks,<br>
 {{ config('app.name') }}

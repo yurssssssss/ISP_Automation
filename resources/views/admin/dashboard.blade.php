@@ -48,6 +48,62 @@
     </div>
 </div>
 
+@php($scheduler = $automation['scheduler'])
+@php($queue = $automation['queue'])
+<section class="panel mb-4">
+    <div class="panel-head">
+        <div>
+            <h2>Automatic billing</h2>
+            <p>Bills, reminders, cut-offs and reconnections happen on their own.</p>
+        </div>
+        <div class="d-flex flex-wrap align-items-center gap-2">
+            <span @class(['status', 'status-active' => $scheduler['running'], 'status-suspended' => ! $scheduler['running']])>Scheduler: {{ $scheduler['running'] ? 'running' : 'not running' }}</span>
+            <span @class(['status', 'status-active' => ! $queue['stuck'], 'status-suspended' => $queue['stuck']])>
+                Worker: {{ $queue['mode'] === 'sync' ? 'instant' : ($queue['stuck'] ? $queue['pending'].' waiting' : 'ok') }}
+            </span>
+            <form method="POST" action="{{ route('admin.automation.run') }}" data-confirm="Run the billing checks now? This creates due bills, sends reminders and cuts accounts that are unpaid after their due date.">
+                @csrf
+                <button class="btn btn-sm btn-primary">Run checks now</button>
+            </form>
+        </div>
+    </div>
+
+    @if (! $scheduler['running'])
+        <div class="alert alert-warning rounded-0 border-0 small mb-0">
+            <strong>The scheduler isn't running</strong>{{ $scheduler['lastSeen'] ? ' (last seen '.$scheduler['lastSeen']->diffForHumans().')' : '' }}, so nothing below happens on its own.
+            Start it with <code>php artisan schedule:work</code> (or <code>composer run dev</code>). On a server, add the cron entry from <code>routes/console.php</code>.
+        </div>
+    @endif
+    @if ($queue['stuck'])
+        <div class="alert alert-warning rounded-0 border-0 small mb-0">
+            <strong>{{ $queue['pending'] }} router {{ Str::plural('change', $queue['pending']) }} and emails are waiting.</strong>
+            Cut-offs and reconnections reach the MikroTik only while a worker runs: <code>php artisan queue:work</code>.
+        </div>
+    @endif
+    @if ($queue['failed'] > 0)
+        <div class="alert alert-danger rounded-0 border-0 small mb-0">
+            {{ $queue['failed'] }} background {{ Str::plural('job', $queue['failed']) }} failed. See them with <code>php artisan queue:failed</code> and retry with <code>php artisan queue:retry all</code>.
+        </div>
+    @endif
+
+    <div class="row g-0">
+        @foreach ($automation['tasks'] as $task)
+            <div class="col-md-6 col-xl-3">
+                <div class="panel-body h-100 border-top {{ $loop->first ? '' : 'border-start-xl' }}">
+                    <div class="small text-body-secondary fw-semibold">Daily at {{ \Carbon\Carbon::createFromFormat('H:i', $task['at'])->format('g:i A') }}</div>
+                    <div class="fw-bold mb-1">{{ $task['label'] }}</div>
+                    @if ($task['lastRun'])
+                        <div class="small">{{ $task['summary'] }}</div>
+                        <div class="small text-body-secondary">Last run {{ $task['lastRun']->diffForHumans() }}</div>
+                    @else
+                        <div class="small text-body-secondary">Hasn't run yet</div>
+                    @endif
+                </div>
+            </div>
+        @endforeach
+    </div>
+</section>
+
 <section class="panel mb-4">
     <div class="panel-head">
         <div>

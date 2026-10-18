@@ -3,6 +3,7 @@
 namespace App\Mail;
 
 use App\Models\Invoice;
+use App\Services\Billing;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Mail\Mailable;
@@ -25,7 +26,7 @@ class InvoiceReminder extends Mailable implements ShouldQueue
     {
         return new Content(markdown: 'mail.invoice-reminder', with: [
             'subscription' => $this->invoice->subscription,
-            'graceDays' => config('isp.grace_days'),
+            'pausesOn' => app(Billing::class)->pausesOn($this->invoice),
         ]);
     }
 }

@@ -7,8 +7,9 @@ return [
     |
     | invoice_lead_days – an invoice is issued this many days before the due date
     | reminder_days     – the "your bill is due" email goes out this many days before
-    | grace_days        – service is cut this many days AFTER the due date
-    |                     (0 = cut at midnight on the due date itself)
+    | grace_days        – extra days after the due date before service is cut.
+    |                     The due date itself is always payable: 0 = cut at
+    |                     midnight right after the due date ends.
     */
     'invoice_lead_days' => (int) env('ISP_INVOICE_LEAD_DAYS', 7),
     'reminder_days' => (int) env('ISP_REMINDER_DAYS', 3),

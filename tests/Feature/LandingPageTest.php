@@ -37,10 +37,10 @@ class LandingPageTest extends TestCase
     public function test_billing_timeline_follows_the_billing_settings(): void
     {
         config(['isp.invoice_lead_days' => 7, 'isp.reminder_days' => 1, 'isp.grace_days' => 0]);
-        $this->get('/')->assertSeeInOrder(['7 days before', '1 day before', 'Before the due date', 'On the due date', 'Service pauses if still unpaid']);
+        $this->get('/')->assertSeeInOrder(['7 days before', '1 day before', 'By the due date', 'Day after the due date', 'Service pauses if still unpaid']);
 
         config(['isp.grace_days' => 3]);
-        $this->get('/')->assertSeeInOrder(['By the due date', '3 days after due date', 'Service pauses if still unpaid']);
+        $this->get('/')->assertSeeInOrder(['By the due date', 'After a 3-day grace period', 'Service pauses if still unpaid']);
     }
 
     public function test_page_says_plans_are_coming_when_there_are_none(): void

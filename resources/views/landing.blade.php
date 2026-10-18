@@ -181,13 +181,13 @@
                                 <div class="timeline-when">{{ $reminderDays }} {{ Str::plural('day', $reminderDays) }} before</div>
                                 <div class="timeline-what">A friendly reminder</div>
                             </li>
-                            {{-- Suspension runs at midnight: with no grace days, a bill unpaid when its due date begins pauses service that day. --}}
+                            {{-- The due date itself is payable; service pauses at midnight after it (plus any grace days). --}}
                             <li>
-                                <div class="timeline-when">{{ $graceDays > 0 ? 'By the due date' : 'Before the due date' }}</div>
+                                <div class="timeline-when">By the due date</div>
                                 <div class="timeline-what">{{ $paymentMethods->isNotEmpty() ? 'Pay online or at our office' : 'Pay at our office' }}</div>
                             </li>
                             <li>
-                                <div class="timeline-when">{{ $graceDays > 0 ? $graceDays.' '.Str::plural('day', $graceDays).' after due date' : 'On the due date' }}</div>
+                                <div class="timeline-when">{{ $graceDays > 0 ? 'After a '.$graceDays.'-day grace period' : 'Day after the due date' }}</div>
                                 <div class="timeline-what">Service pauses if still unpaid</div>
                             </li>
                             <li class="is-good">

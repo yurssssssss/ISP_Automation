@@ -4,6 +4,7 @@ namespace App\Console\Commands;
 
 use App\Models\Subscription;
 use App\Services\Billing;
+use App\Support\Automation;
 use Illuminate\Console\Attributes\Description;
 use Illuminate\Console\Attributes\Signature;
 use Illuminate\Console\Command;
@@ -28,7 +29,9 @@ class SuspendOverdue extends Command
                 }
             });
 
-        $this->info("Suspended {$count} subscription(s).");
+        $summary = "Suspended {$count} subscription(s).";
+        Automation::record('billing:suspend-overdue', $summary);
+        $this->info($summary);
 
         return self::SUCCESS;
     }

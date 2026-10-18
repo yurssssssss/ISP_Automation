@@ -3,7 +3,9 @@
 namespace Tests\Feature;
 
 use App\Jobs\SyncRouterAccess;
+use App\Mail\InvoiceIssued;
 use App\Mail\InvoiceReminder;
+use App\Mail\PaymentReceived;
 use App\Mail\ServiceSuspended;
 use App\Models\Invoice;
 use App\Models\Subscription;
@@ -58,10 +60,44 @@ class BillingAutomationTest extends TestCase
         Mail::assertQueued(InvoiceReminder::class, 1);
     }
 
+    public function test_new_bill_is_emailed_once_when_issued(): void
+    {
+        Mail::fake();
+        Subscription::factory()->create(['next_due_date' => '2026-10-20']);
+
+        $this->artisan('billing:issue-invoices');
+        $this->artisan('billing:issue-invoices');
+
+        Mail::assertQueued(InvoiceIssued::class, 1);
+    }
+
+    public function test_bill_emails_say_when_service_would_pause(): void
+    {
+        config(['isp.grace_days' => 2]);
+        $invoice = app(Billing::class)->issueInvoice(Subscription::factory()->create(['next_due_date' => '2026-10-20']));
+
+        (new InvoiceIssued($invoice))->assertSeeInHtml('service pauses on October 23');
+        (new InvoiceReminder($invoice))->assertSeeInHtml('service pauses on October 23');
+    }
+
+    public function test_bill_due_today_can_still_be_paid_today(): void
+    {
+        Queue::fake();
+        $sub = Subscription::factory()->create(['next_due_date' => '2026-10-15']);
+        app(Billing::class)->issueInvoice($sub);
+
+        $this->artisan('billing:suspend-overdue');
+        $this->assertSame('active', $sub->fresh()->status);
+
+        $this->travelTo(now()->setDate(2026, 10, 16)->setTime(0, 0));
+        $this->artisan('billing:suspend-overdue');
+        $this->assertSame('suspended', $sub->fresh()->status);
+    }
+
     public function test_overdue_subscription_is_suspended_and_cut_on_the_router(): void
     {
         Mail::fake();
-        $sub = Subscription::factory()->create(['next_due_date' => '2026-10-15']);
+        $sub = Subscription::factory()->create(['next_due_date' => '2026-10-14']);
         app(Billing::class)->issueInvoice($sub);
         $this->router->addAccount($sub->username);
 
@@ -82,6 +118,9 @@ class BillingAutomationTest extends TestCase
         $sub = Subscription::factory()->create(['next_due_date' => '2026-10-14']);
         app(Billing::class)->issueInvoice($sub);
 
+        // Due Oct 14 + 2 grace days: still on through Oct 16, cut on Oct 17.
+        $this->artisan('billing:suspend-overdue');
+        $this->travel(1)->day();
         $this->artisan('billing:suspend-overdue');
         $this->assertSame('active', $sub->fresh()->status);
 
@@ -117,6 +156,19 @@ class BillingAutomationTest extends TestCase
         $this->assertSame('active', $sub->status);
         $this->assertSame('2026-11-15', $sub->next_due_date->toDateString());
         $this->assertSame('false', $this->router->accounts[$sub->username]['disabled']);
+        Mail::assertQueued(PaymentReceived::class, fn (PaymentReceived $mail) => $mail->reconnected
+            && str_contains($mail->render(), 'Your internet is back on'));
+    }
+
+    public function test_receipt_for_an_on_time_payment_does_not_mention_reconnecting(): void
+    {
+        Mail::fake();
+        $invoice = app(Billing::class)->issueInvoice(Subscription::factory()->create(['next_due_date' => '2026-10-20']));
+
+        app(Billing::class)->recordPayment($invoice, 999, 'cash', 'manual');
+
+        Mail::assertQueued(PaymentReceived::class, fn (PaymentReceived $mail) => ! $mail->reconnected
+            && ! str_contains($mail->render(), 'back on'));
     }
 
     public function test_partial_payment_keeps_the_invoice_open(): void

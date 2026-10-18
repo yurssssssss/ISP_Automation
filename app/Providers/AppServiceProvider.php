@@ -5,6 +5,7 @@ namespace App\Providers;
 use App\Services\MikroTik\MikroTikGateway;
 use App\Services\MikroTik\RouterGateway;
 use Illuminate\Cache\RateLimiting\Limit;
+use Illuminate\Foundation\DevCommands;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\RateLimiter;
@@ -31,6 +32,12 @@ class AppServiceProvider extends ServiceProvider
 
         // Choosing a password (reset / first password): 8+ characters with an upper- and a
         // lowercase letter, a number and a symbol.
+        // `composer run dev` also starts the scheduler (billing automation);
+        // the queue worker is one of the defaults.
+        if ($this->app->runningInConsole()) {
+            DevCommands::artisan('schedule:work', 'scheduler');
+        }
+
         Password::defaults(fn () => Password::min(8)->mixedCase()->numbers()->symbols());
 
         // POST /login — per IP across all accounts (stops one machine from

@@ -46,6 +46,21 @@ class ScreensTest extends TestCase
             ->assertSee('1 overdue bill');
     }
 
+    public function test_cash_payment_reconnects_a_suspended_client(): void
+    {
+        Queue::fake();
+        $sub = Subscription::factory()->create(['next_due_date' => today()->subDays(2)]);
+        $invoice = app(Billing::class)->issueInvoice($sub);
+        app(Billing::class)->suspend($sub, notify: false);
+
+        // No receipt number sent at all.
+        $this->actingAs(User::factory()->admin()->create())
+            ->post(route('admin.invoices.cash', $invoice), ['amount' => 999])
+            ->assertSessionHas('status', "Payment of ₱999.00 recorded for {$invoice->number}.");
+
+        $this->assertSame('active', $sub->fresh()->status);
+    }
+
     public function test_client_cannot_open_admin(): void
     {
         $client = Client::factory()->withLogin()->create();

@@ -4,6 +4,7 @@ namespace App\Console\Commands;
 
 use App\Mail\InvoiceReminder;
 use App\Models\Invoice;
+use App\Support\Automation;
 use Illuminate\Console\Attributes\Description;
 use Illuminate\Console\Attributes\Signature;
 use Illuminate\Console\Command;
@@ -34,7 +35,9 @@ class SendReminders extends Command
                 }
             });
 
-        $this->info("Queued {$count} reminder(s).");
+        $summary = "Queued {$count} reminder(s).";
+        Automation::record('billing:send-reminders', $summary);
+        $this->info($summary);
 
         return self::SUCCESS;
     }

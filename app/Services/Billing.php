@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\Jobs\SyncRouterAccess;
+use App\Mail\InvoiceIssued;
 use App\Mail\PaymentReceived;
 use App\Mail\ServiceSuspended;
 use App\Models\Invoice;
@@ -42,6 +43,12 @@ class Billing
             'amount' => $subscription->plan->price,
             'status' => Invoice::UNPAID,
         ]);
+    }
+
+    /** Emails the client their new bill. */
+    public function sendNewInvoice(Invoice $invoice): void
+    {
+        $this->mail($invoice->subscription, new InvoiceIssued($invoice));
     }
 
     /**
@@ -95,7 +102,7 @@ class Billing
             if ($restored) {
                 SyncRouterAccess::dispatch($payment->invoice->subscription);
             }
-            $this->mail($payment->invoice->subscription, new PaymentReceived($payment));
+            $this->mail($payment->invoice->subscription, new PaymentReceived($payment, reconnected: $restored));
         }
 
         return $payment;
@@ -170,10 +177,20 @@ class Billing
             ->exists();
     }
 
-    /** Invoices due on or before this date are overdue (= today − grace). */
+    /**
+     * Invoices due on or before this date are overdue (= today − grace − 1).
+     * The due date itself is always payable: with no grace days, a bill due
+     * on the 15th is cut at midnight going into the 16th.
+     */
     public function overdueCutoff(): string
     {
-        return now()->subDays(config('isp.grace_days'))->toDateString();
+        return now()->subDays(config('isp.grace_days') + 1)->toDateString();
+    }
+
+    /** The day service pauses if this invoice is still unpaid (for emails and screens). */
+    public function pausesOn(Invoice $invoice): CarbonInterface
+    {
+        return $invoice->due_date->copy()->addDays(config('isp.grace_days') + 1);
     }
 
     private function mail(Subscription $subscription, $mailable): void
