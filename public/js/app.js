@@ -7,6 +7,41 @@ window.addEventListener('pageshow', function (event) {
     }
 });
 
+// Ask before a form that does something drastic: <form data-confirm="Suspend …?">.
+document.querySelectorAll('form[data-confirm]').forEach(function (form) {
+    form.addEventListener('submit', function (event) {
+        if (!window.confirm(form.dataset.confirm)) {
+            event.preventDefault();
+        }
+    });
+});
+
+// Filter a table's rows as you type: <input data-table-filter="{table id}">.
+// A row marked data-filter-empty shows when nothing matches.
+document.querySelectorAll('[data-table-filter]').forEach(function (input) {
+    var table = document.getElementById(input.dataset.tableFilter);
+    if (!table) {
+        return;
+    }
+    var rows = Array.prototype.filter.call(table.tBodies[0].rows, function (row) {
+        return !row.hasAttribute('data-filter-empty') && !row.querySelector('.empty');
+    });
+    var emptyRow = table.querySelector('[data-filter-empty]');
+
+    input.addEventListener('input', function () {
+        var query = input.value.trim().toLowerCase();
+        var shown = 0;
+        rows.forEach(function (row) {
+            var match = !query || row.textContent.toLowerCase().indexOf(query) !== -1;
+            row.classList.toggle('d-none', !match);
+            shown += match ? 1 : 0;
+        });
+        if (emptyRow) {
+            emptyRow.classList.toggle('d-none', shown > 0 || rows.length === 0);
+        }
+    });
+});
+
 // Show / hide password: <button data-password-toggle="{input id}" aria-pressed="false">.
 document.querySelectorAll('[data-password-toggle]').forEach(function (button) {
     var input = document.getElementById(button.dataset.passwordToggle);

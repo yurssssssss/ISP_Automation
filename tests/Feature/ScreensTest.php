@@ -31,6 +31,21 @@ class ScreensTest extends TestCase
         $this->get(route('admin.plans.index'))->assertOk();
     }
 
+    public function test_dashboard_counts_overdue_bills(): void
+    {
+        Queue::fake();
+        $billing = app(Billing::class);
+        $billing->issueInvoice(Subscription::factory()->create(['next_due_date' => today()->subDay()]));
+        $billing->issueInvoice(Subscription::factory()->create(['next_due_date' => today()]));
+        $paid = $billing->issueInvoice(Subscription::factory()->create(['next_due_date' => today()->subDays(5)]));
+        $billing->recordPayment($paid, (float) $paid->amount, 'cash', 'manual', null, now(), null);
+
+        $this->actingAs(User::factory()->admin()->create())
+            ->get(route('admin.dashboard'))
+            ->assertViewHas('stats', fn (array $stats) => $stats['overdue'] === 1)
+            ->assertSee('1 overdue bill');
+    }
+
     public function test_client_cannot_open_admin(): void
     {
         $client = Client::factory()->withLogin()->create();

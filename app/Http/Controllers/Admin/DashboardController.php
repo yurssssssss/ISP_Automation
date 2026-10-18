@@ -21,6 +21,7 @@ class DashboardController extends Controller
                 'active' => Subscription::where('status', Subscription::ACTIVE)->count(),
                 'suspended' => Subscription::where('status', Subscription::SUSPENDED)->count(),
                 'receivable' => (float) Invoice::open()->selectRaw('COALESCE(SUM(amount - amount_paid), 0) as total')->value('total'),
+                'overdue' => Invoice::open()->whereDate('due_date', '<', today())->count(),
                 'collected' => (float) Payment::where('paid_at', '>=', now()->startOfMonth())->sum('amount'),
             ],
             'subscriptions' => Subscription::with(['client', 'plan'])

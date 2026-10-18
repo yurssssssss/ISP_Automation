@@ -27,6 +27,15 @@ return [
     'suspended_profile' => env('ISP_SUSPENDED_PROFILE', 'suspended'),
 
     /*
+    | The first admin login, created by `php artisan db:seed`
+    | (AdminUserSeeder). Locally, an empty password means Admin#12345.
+    */
+    'admin' => [
+        'email' => env('ADMIN_EMAIL', 'admin@isp.test'),
+        'password' => env('ADMIN_PASSWORD'),
+    ],
+
+    /*
     | Office contact details shown on the public front page. Leave any of
     | them empty to hide that line.
     */
