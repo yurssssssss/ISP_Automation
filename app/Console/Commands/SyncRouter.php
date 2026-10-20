@@ -4,17 +4,25 @@ namespace App\Console\Commands;
 
 use App\Jobs\SyncRouterAccess;
 use App\Models\Subscription;
+use App\Services\MikroTik\RouterGateway;
 use App\Support\Automation;
 use Illuminate\Console\Attributes\Description;
 use Illuminate\Console\Attributes\Signature;
 use Illuminate\Console\Command;
 
-#[Signature('mikrotik:sync {username? : Only this subscription} {--now : Run immediately instead of queueing}')]
+#[Signature('mikrotik:sync {username? : Only this subscription} {--now : Run immediately instead of queueing} {--create-missing : Also add accounts the router doesn\'t have yet (first run after connecting a router)}')]
 #[Description('Make the router match the database (enable active accounts, cut suspended ones)')]
 class SyncRouter extends Command
 {
-    public function handle(): int
+    public function handle(RouterGateway $router): int
     {
+        if (! $router->isConfigured()) {
+            $this->recordFullSync('Skipped: no router set up yet.');
+            $this->warn('The router isn\'t set up yet (MIKROTIK_HOST / MIKROTIK_USERNAME / MIKROTIK_PASSWORD). Nothing to sync.');
+
+            return self::SUCCESS;
+        }
+
         $query = Subscription::query()->when($this->argument('username'), fn ($q, $u) => $q->where('username', $u));
 
         if (! $query->exists()) {
@@ -25,12 +33,13 @@ class SyncRouter extends Command
         }
 
         foreach ($query->cursor() as $subscription) {
+            $createIfMissing = (bool) $this->option('create-missing');
             if ($this->option('now')) {
-                SyncRouterAccess::dispatchSync($subscription);
+                SyncRouterAccess::dispatchSync($subscription, $createIfMissing);
                 $log = $subscription->routerLogs()->latest('id')->first();
                 $this->line(sprintf('%-20s %-10s %-5s %s', $subscription->username, $subscription->status, $log?->success ? 'OK' : 'FAIL', $log?->message));
             } else {
-                SyncRouterAccess::dispatch($subscription);
+                SyncRouterAccess::dispatch($subscription, $createIfMissing);
             }
         }
 

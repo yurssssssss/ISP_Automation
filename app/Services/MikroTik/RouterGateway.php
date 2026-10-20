@@ -10,6 +10,12 @@ namespace App\Services\MikroTik;
  */
 interface RouterGateway
 {
+    /**
+     * Whether a router has been set up at all (address and login filled in).
+     * Until then router changes are skipped, not retried as failures.
+     */
+    public function isConfigured(): bool;
+
     /** The router's /system identity name — used to test the connection. */
     public function identity(): string;
 

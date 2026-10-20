@@ -2,6 +2,7 @@
 
 namespace App\Support;
 
+use App\Services\MikroTik\RouterGateway;
 use Carbon\CarbonImmutable;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
@@ -45,6 +46,12 @@ class Automation
         Cache::forever('automation:task:'.$command, ['at' => now()->toIso8601String(), 'summary' => $summary]);
     }
 
+    /** Result of the dashboard's "Test router" button. */
+    public static function recordRouterCheck(bool $ok, string $message): void
+    {
+        Cache::forever('automation:router-check', ['ok' => $ok, 'message' => $message, 'at' => now()->toIso8601String()]);
+    }
+
     public static function heartbeat(): void
     {
         Cache::forever(self::HEARTBEAT_KEY, now()->getTimestamp());
@@ -60,12 +67,14 @@ class Automation
      * @return array{
      *     scheduler: array{running: bool, lastSeen: ?CarbonImmutable},
      *     queue: array{mode: string, pending: int, stuck: bool, failed: int},
+     *     router: array{configured: bool, host: ?string, lastCheck: ?array{ok: bool, message: string, at: CarbonImmutable}},
      *     tasks: list<array{command: string, label: string, at: string, lastRun: ?CarbonImmutable, summary: ?string}>
      * }
      */
     public static function status(): array
     {
         $heartbeat = Cache::get(self::HEARTBEAT_KEY);
+        $routerCheck = Cache::get('automation:router-check');
 
         $tasks = [];
         foreach (self::TASKS as $command => $task) {
@@ -85,6 +94,11 @@ class Automation
                 'lastSeen' => $heartbeat ? CarbonImmutable::createFromTimestamp($heartbeat) : null,
             ],
             'queue' => self::queueStatus(),
+            'router' => [
+                'configured' => app(RouterGateway::class)->isConfigured(),
+                'host' => config('isp.mikrotik.host'),
+                'lastCheck' => $routerCheck ? ['ok' => $routerCheck['ok'], 'message' => $routerCheck['message'], 'at' => CarbonImmutable::parse($routerCheck['at'])] : null,
+            ],
             'tasks' => $tasks,
         ];
     }

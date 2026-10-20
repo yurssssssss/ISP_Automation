@@ -18,6 +18,13 @@ class MikroTikGateway implements RouterGateway
 
     public function __construct(private array $config) {}
 
+    public function isConfigured(): bool
+    {
+        return filled($this->config['host'] ?? null)
+            && filled($this->config['username'] ?? null)
+            && filled($this->config['password'] ?? null);
+    }
+
     public static function fromConfig(): self
     {
         return new self(config('isp.mikrotik'));

@@ -1,7 +1,8 @@
 # Live stack for an always-on PC on the office LAN (or a VPS).
 #
 #   1. copy .env.production.example to .env.production and fill it in
-#   2. docker compose --env-file .env.production -f compose.production.yaml up -d --build
+#   2. docker compose --env-file .env.production -f compose.production.yaml --profile tunnel up -d --build
+#      (or on Windows: .\docker\production.ps1 start)
 #
 # The app reaches the MikroTik directly over the LAN. Customers and PayMongo
 # reach the app through the Cloudflare Tunnel, which only makes outgoing
@@ -10,6 +11,10 @@
 # Updating after a code change: run step 2 again (migrations run on start).
 # --env-file matters: it feeds the same values to MySQL below, and stops
 # Compose from reading the local development .env instead.
+
+# Its own project, so it never replaces the demo stack (compose.yaml) or
+# shares its database volume — both live in this folder.
+name: isp-production
 
 x-app: &app
   image: isp-automation:production
@@ -67,16 +72,29 @@ services:
       timeout: 5s
       retries: 30
 
-  # Public https address for the app (TUNNEL_TOKEN from the Cloudflare dashboard).
+  # Public https address, choose one with --profile (or use docker/production.ps1):
+  #   --profile quick-tunnel : free trycloudflare.com address, no account needed;
+  #                            it changes every time this container restarts.
+  #   --profile tunnel       : your own domain (TUNNEL_TOKEN from the Cloudflare dashboard).
+  quick-tunnel:
+    image: cloudflare/cloudflared:2026.9.3
+    restart: unless-stopped
+    command: ["tunnel", "--no-autoupdate", "--url", "http://app:80"]
+    depends_on:
+      app:
+        condition: service_healthy
+    profiles: ["quick-tunnel"]
+
   tunnel:
     image: cloudflare/cloudflared:2026.9.3
     restart: unless-stopped
     command: ["tunnel", "--no-autoupdate", "run"]
     environment:
-      TUNNEL_TOKEN: ${TUNNEL_TOKEN:?set TUNNEL_TOKEN in .env.production}
+      TUNNEL_TOKEN: ${TUNNEL_TOKEN:-}
     depends_on:
       app:
         condition: service_healthy
+    profiles: ["tunnel"]
 
 volumes:
   db-data:

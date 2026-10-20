@@ -129,7 +129,13 @@ class Billing
             $subscription->next_due_date = $start->addMonthNoOverflow();
         }
 
-        $reactivate = $subscription->isSuspended() && ! $this->hasOverdue($subscription);
+        $settled = ! $this->hasOverdue($subscription);
+        if ($settled) {
+            // Paid up: an admin's "keep connected until" no longer matters.
+            $subscription->suspension_hold_until = null;
+        }
+
+        $reactivate = $subscription->isSuspended() && $settled;
         if ($reactivate) {
             $subscription->status = Subscription::ACTIVE;
             $subscription->suspended_at = null;
@@ -157,14 +163,18 @@ class Billing
         }
     }
 
-    /** Admin override: reconnect without a payment. */
-    public function restore(Subscription $subscription): void
+    /**
+     * Admin override: reconnect without a payment. With a bill still unpaid,
+     * $keepOnUntil stops the midnight run from cutting the account again
+     * before that date (a promise to pay); after it, automation resumes.
+     */
+    public function restore(Subscription $subscription, ?CarbonInterface $keepOnUntil = null): void
     {
         if ($subscription->status !== Subscription::SUSPENDED) {
             return;
         }
 
-        $subscription->update(['status' => Subscription::ACTIVE, 'suspended_at' => null]);
+        $subscription->update(['status' => Subscription::ACTIVE, 'suspended_at' => null, 'suspension_hold_until' => $keepOnUntil?->toDateString()]);
         $subscription->client()->update(['status' => 'active']);
         SyncRouterAccess::dispatch($subscription);
     }

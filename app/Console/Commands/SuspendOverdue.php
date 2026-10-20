@@ -19,7 +19,11 @@ class SuspendOverdue extends Command
 
         // "On or before the cutoff", not "equal to today", so a missed
         // midnight run is caught up on the next one.
+        // Skips customers set to manual cut-off, and accounts an admin kept on
+        // until a date that hasn't passed yet.
         Subscription::where('status', Subscription::ACTIVE)
+            ->where('auto_suspend', true)
+            ->where(fn ($q) => $q->whereNull('suspension_hold_until')->orWhereDate('suspension_hold_until', '<', today()->toDateString()))
             ->whereHas('invoices', fn ($q) => $q->open()->whereDate('due_date', '<=', $billing->overdueCutoff()))
             ->with('client')
             ->chunkById(200, function ($subscriptions) use ($billing, &$count) {

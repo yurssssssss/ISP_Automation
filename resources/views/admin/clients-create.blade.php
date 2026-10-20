@@ -74,9 +74,17 @@
             <section class="panel" style="position: sticky; top: 1.5rem;">
                 <div class="panel-head"><div><h2>Router</h2><p>MikroTik account for this client.</p></div><span class="icon-tile">@include('partials.icon', ['name' => 'router'])</span></div>
                 <div class="panel-body">
-                    <div class="form-check mb-4">
+                    <div class="form-check mb-3">
                         <input class="form-check-input" type="checkbox" name="create_on_router" value="1" id="create_on_router" @checked(old('create_on_router', true))>
                         <label class="form-check-label" for="create_on_router">Also create this account on the MikroTik router <span class="d-block small text-body-secondary">Skipped if it already exists.</span></label>
+                    </div>
+                    <div class="mb-4">
+                        <label class="form-label" for="auto_suspend">Cut-off when unpaid</label>
+                        <select id="auto_suspend" name="auto_suspend" class="form-select">
+                            <option value="1" @selected(old('auto_suspend', '1') === '1')>Automatic: cut at midnight after the due date</option>
+                            <option value="0" @selected(old('auto_suspend') === '0')>Manual: only when you click Suspend</option>
+                        </select>
+                        <div class="form-text">Either way, paying reconnects them automatically. You can change this later on the dashboard.</div>
                     </div>
                     <button class="btn btn-primary w-100 d-inline-flex justify-content-center align-items-center gap-2" @disabled($plans->isEmpty())>@include('partials.icon', ['name' => 'user-plus'])Add client</button>
                     <a href="{{ route('admin.dashboard') }}" class="btn btn-light-outline w-100 mt-2">Cancel</a>

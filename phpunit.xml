@@ -45,6 +45,8 @@
         <env name="TELESCOPE_ENABLED" value="false" force="true"/>
         <server name="TELESCOPE_ENABLED" value="false"/>
         <env name="NIGHTWATCH_ENABLED" value="false" force="true"/>
+        <env name="MIKROTIK_PASSWORD" value="" force="true"/>
+        <server name="MIKROTIK_PASSWORD" value=""/>
         <server name="NIGHTWATCH_ENABLED" value="false"/>
     </php>
 </phpunit>

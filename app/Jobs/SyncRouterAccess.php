@@ -26,7 +26,12 @@ class SyncRouterAccess implements ShouldBeUniqueUntilProcessing, ShouldQueue
 
     public int $tries = 6;
 
-    public function __construct(public Subscription $subscription)
+    /**
+     * $createIfMissing: add the account to the router (with the stored
+     * PPPoE password and the plan's profile) when it isn't there — used once
+     * after connecting a router to an existing customer list.
+     */
+    public function __construct(public Subscription $subscription, public bool $createIfMissing = false)
     {
         // Wait for the suspend/payment transaction to commit, so the job
         // never reads the status from before the change.
@@ -46,12 +51,25 @@ class SyncRouterAccess implements ShouldBeUniqueUntilProcessing, ShouldQueue
 
     public function handle(RouterGateway $router): void
     {
-        $subscription = $this->subscription->fresh(['plan']);
+        $subscription = $this->subscription->fresh(['plan', 'client']);
         $enable = $subscription->status === Subscription::ACTIVE;
         $service = $subscription->service_type;
         $username = $subscription->username;
 
+        if (! $router->isConfigured()) {
+            // Nothing to retry until a router exists; `mikrotik:sync` catches up later.
+            $this->log($subscription, $enable, false, 'Router not set up yet — skipped. Run `php artisan mikrotik:sync --create-missing` once it is connected.');
+            $this->delete();
+
+            return;
+        }
+
         $account = $router->findAccount($username, $service);
+        if (! $account && $this->createIfMissing) {
+            $router->createAccount($username, $subscription->password, $subscription->plan->mikrotik_profile, $service,
+                trim($subscription->client?->account_no.' '.$subscription->client?->name));
+            $account = $router->findAccount($username, $service);
+        }
         if (! $account) {
             // Retrying can't fix a missing account — record it and stop.
             $this->log($subscription, $enable, false, "No {$service} account named \"{$username}\" on the router.");

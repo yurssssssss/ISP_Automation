@@ -15,6 +15,16 @@ class MikroTikTest extends Command
     public function handle(RouterGateway $router): int
     {
         $config = config('isp.mikrotik');
+
+        if (! $router->isConfigured()) {
+            $missing = collect(['host' => 'MIKROTIK_HOST', 'username' => 'MIKROTIK_USERNAME', 'password' => 'MIKROTIK_PASSWORD'])
+                ->filter(fn (string $env, string $key): bool => blank($config[$key] ?? null))
+                ->implode(', ');
+            $this->error("The router isn't set up yet. Fill in {$missing}, then restart the app.");
+
+            return self::FAILURE;
+        }
+
         $this->line("Connecting to {$config['host']}:{$config['port']}".($config['ssl'] ? ' (API-SSL)' : '').' as '.$config['username'].' ...');
 
         try {

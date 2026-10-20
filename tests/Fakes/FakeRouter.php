@@ -16,6 +16,17 @@ class FakeRouter implements RouterGateway
 
     public bool $down = false;
 
+    /** Passwords of accounts made with createAccount(), by username. */
+    public array $passwords = [];
+
+    /** false = behave like a router whose address and login aren't filled in yet. */
+    public bool $configured = true;
+
+    public function isConfigured(): bool
+    {
+        return $this->configured;
+    }
+
     public function addAccount(string $username, string $profile = '20M', bool $disabled = false, bool $online = true): void
     {
         $this->accounts[$username] = ['.id' => '*'.(count($this->accounts) + 1), 'name' => $username, 'profile' => $profile, 'disabled' => $disabled ? 'true' : 'false'];
@@ -50,6 +61,7 @@ class FakeRouter implements RouterGateway
     {
         $this->call("create {$username}");
         $this->addAccount($username, $profile, online: false);
+        $this->passwords[$username] = $password;
     }
 
     public function setDisabled(string $username, bool $disabled, string $service = 'pppoe'): void

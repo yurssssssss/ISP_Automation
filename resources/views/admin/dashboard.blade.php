@@ -50,6 +50,7 @@
 
 @php($scheduler = $automation['scheduler'])
 @php($queue = $automation['queue'])
+@php($router = $automation['router'])
 <section class="panel mb-4">
     <div class="panel-head">
         <div>
@@ -61,6 +62,18 @@
             <span @class(['status', 'status-active' => ! $queue['stuck'], 'status-suspended' => $queue['stuck']])>
                 Worker: {{ $queue['mode'] === 'sync' ? 'instant' : ($queue['stuck'] ? $queue['pending'].' waiting' : 'ok') }}
             </span>
+            @if (! $router['configured'])
+                <span class="status status-other">Router: not set up</span>
+            @elseif ($router['lastCheck'])
+                <span @class(['status', 'status-active' => $router['lastCheck']['ok'], 'status-suspended' => ! $router['lastCheck']['ok']])
+                      title="{{ $router['lastCheck']['message'] }} ({{ $router['lastCheck']['at']->diffForHumans() }})">Router: {{ $router['lastCheck']['ok'] ? 'connected' : 'unreachable' }}</span>
+            @else
+                <span class="status status-other">Router: not tested</span>
+            @endif
+            <form method="POST" action="{{ route('admin.router.test') }}">
+                @csrf
+                <button class="btn btn-sm btn-light-outline">Test router</button>
+            </form>
             <form method="POST" action="{{ route('admin.automation.run') }}" data-confirm="Run the billing checks now? This creates due bills, sends reminders and cuts accounts that are unpaid after their due date.">
                 @csrf
                 <button class="btn btn-sm btn-primary">Run checks now</button>
@@ -68,6 +81,12 @@
         </div>
     </div>
 
+    @if (! $router['configured'])
+        <div class="alert alert-info rounded-0 border-0 small mb-0">
+            <strong>No router connected yet.</strong> Billing still runs: cut-offs and reconnections are recorded here and applied to the MikroTik once it's connected.
+            Fill in <code>MIKROTIK_HOST</code>, <code>MIKROTIK_USERNAME</code> and <code>MIKROTIK_PASSWORD</code>, restart, click <strong>Test router</strong>, then run <code>php artisan mikrotik:sync --now --create-missing</code> once.
+        </div>
+    @endif
     @if (! $scheduler['running'])
         <div class="alert alert-warning rounded-0 border-0 small mb-0">
             <strong>The scheduler isn't running</strong>{{ $scheduler['lastSeen'] ? ' (last seen '.$scheduler['lastSeen']->diffForHumans().')' : '' }}, so nothing below happens on its own.
@@ -115,9 +134,12 @@
             <input type="search" class="form-control" placeholder="Search name, account, username…" data-table-filter="subscriptionsTable" aria-label="Search subscriptions">
         </label>
     </div>
+    @error('keep_on_until')
+        <div class="alert alert-danger rounded-0 border-0 small mb-0">{{ $message }}</div>
+    @enderror
     <div class="table-responsive">
         <table class="table table-modern" id="subscriptionsTable">
-            <thead><tr><th>Client</th><th>Plan</th><th>Username</th><th>Next due</th><th>Status</th><th class="text-end">Action</th></tr></thead>
+            <thead><tr><th>Client</th><th>Plan</th><th>Username</th><th>Next due</th><th>Status</th><th>Cut-off</th><th class="text-end">Action</th></tr></thead>
             <tbody>
             @forelse ($subscriptions as $s)
                 @php($daysToDue = (int) today()->diffInDays($s->next_due_date, false))
@@ -140,9 +162,32 @@
                             <span class="cell-sub due-soon">Due in {{ $daysToDue }} {{ Str::plural('day', $daysToDue) }}</span>
                         @endif
                     </td>
-                    <td><span @class(['status', 'status-active' => $s->status === 'active', 'status-suspended' => $s->isSuspended(), 'status-other' => ! in_array($s->status, ['active', 'suspended'], true)])>{{ Str::ucfirst($s->status) }}</span></td>
+                    <td>
+                        <span @class(['status', 'status-active' => $s->status === 'active', 'status-suspended' => $s->isSuspended(), 'status-other' => ! in_array($s->status, ['active', 'suspended'], true)])>{{ Str::ucfirst($s->status) }}</span>
+                        @if ($s->isOnHold())
+                            <span class="cell-sub due-soon">Kept on until {{ $s->suspension_hold_until->format('M j') }}</span>
+                        @endif
+                    </td>
+                    <td>
+                        <form method="POST" action="{{ route('admin.subscriptions.cutoff', $s) }}" class="d-flex align-items-center gap-2"
+                              data-confirm="{{ $s->auto_suspend ? "Switch {$s->username} to manual cut-off? The system will never cut them automatically for an unpaid bill." : "Switch {$s->username} to automatic cut-off? They'll be cut at midnight whenever a bill is unpaid after its due date." }}">
+                            @csrf
+                            <input type="hidden" name="auto_suspend" value="{{ $s->auto_suspend ? 0 : 1 }}">
+                            <span @class(['status', 'status-active' => $s->auto_suspend, 'status-other' => ! $s->auto_suspend])>{{ $s->auto_suspend ? 'Automatic' : 'Manual' }}</span>
+                            <button class="btn btn-link btn-sm p-0" title="{{ $s->auto_suspend ? 'Stop cutting this customer automatically' : 'Cut this customer automatically when unpaid' }}">{{ $s->auto_suspend ? 'Set manual' : 'Set automatic' }}</button>
+                        </form>
+                    </td>
                     <td class="text-end">
-                        @if ($s->isSuspended())
+                        @if ($s->isSuspended() && $s->auto_suspend && $s->has_overdue)
+                            {{-- Still unpaid: without a date, tonight's run would cut them again. --}}
+                            <form method="POST" action="{{ route('admin.subscriptions.restore', $s) }}" class="d-inline-flex align-items-center gap-1 justify-content-end">
+                                @csrf
+                                <label class="small text-body-secondary text-nowrap" for="keep-on-{{ $s->id }}">Keep on until</label>
+                                <input id="keep-on-{{ $s->id }}" type="date" name="keep_on_until" value="{{ today()->addDays(3)->toDateString() }}" min="{{ today()->toDateString() }}" max="{{ today()->addDays(60)->toDateString() }}"
+                                       class="form-control form-control-sm" style="width: 9.5rem;" required>
+                                <button class="btn btn-sm btn-soft-success">Restore</button>
+                            </form>
+                        @elseif ($s->isSuspended())
                             <form method="POST" action="{{ route('admin.subscriptions.restore', $s) }}">@csrf<button class="btn btn-sm btn-soft-success">Restore</button></form>
                         @else
                             <form method="POST" action="{{ route('admin.subscriptions.suspend', $s) }}" data-confirm="Suspend {{ $s->client->name }} ({{ $s->username }})? Their internet will be cut off.">@csrf<button class="btn btn-sm btn-soft-danger">Suspend</button></form>
@@ -150,7 +195,7 @@
                     </td>
                 </tr>
             @empty
-                <tr><td colspan="6">
+                <tr><td colspan="7">
                     <div class="empty">
                         <span class="icon-tile">@include('partials.icon', ['name' => 'users'])</span>
                         <div class="fw-semibold text-body">No subscriptions yet</div>
@@ -159,7 +204,7 @@
                     </div>
                 </td></tr>
             @endforelse
-            <tr class="d-none" data-filter-empty><td colspan="6" class="empty">No subscriptions match your search.</td></tr>
+            <tr class="d-none" data-filter-empty><td colspan="7" class="empty">No subscriptions match your search.</td></tr>
             </tbody>
         </table>
     </div>

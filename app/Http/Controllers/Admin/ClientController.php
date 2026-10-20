@@ -33,6 +33,7 @@ class ClientController extends Controller
             'service_password' => ['required', 'string', 'min:6', 'max:64'],
             'next_due_date' => ['required', 'date', 'after_or_equal:today'],
             'create_on_router' => ['nullable', 'boolean'],
+            'auto_suspend' => ['nullable', 'boolean'],
         ]);
         $data['email'] = Str::lower(trim($data['email']));
 
@@ -60,12 +61,15 @@ class ClientController extends Controller
                 'username' => $data['username'],
                 'password' => $data['service_password'],
                 'next_due_date' => $data['next_due_date'],
+                'auto_suspend' => $data['auto_suspend'] ?? true,
             ]);
         });
 
         $message = "Client {$subscription->client->account_no} added. They set their portal password with \"Forgot password\" using {$data['email']}.";
 
-        if ($request->boolean('create_on_router')) {
+        if ($request->boolean('create_on_router') && ! $router->isConfigured()) {
+            $message .= ' The router isn\'t set up yet, so the PPPoE account will be created when you connect it (mikrotik:sync --create-missing).';
+        } elseif ($request->boolean('create_on_router')) {
             try {
                 if ($router->findAccount($subscription->username, $subscription->service_type)) {
                     $message .= ' The router already had this account, so it was left as is.';
