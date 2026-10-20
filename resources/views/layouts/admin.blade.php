@@ -24,7 +24,8 @@
             <p class="admin-nav-label">Manage</p>
             <ul class="admin-nav">
                 <li><a href="{{ route('admin.dashboard') }}" @class(['active' => request()->routeIs('admin.dashboard')])>@include('partials.icon', ['name' => 'grid'])Dashboard</a></li>
-                <li><a href="{{ route('admin.clients.create') }}" @class(['active' => request()->routeIs('admin.clients.*')])>@include('partials.icon', ['name' => 'user-plus'])Add client</a></li>
+                <li><a href="{{ route('admin.clients.create') }}" @class(['active' => request()->routeIs('admin.clients.create')])>@include('partials.icon', ['name' => 'user-plus'])Add client</a></li>
+                <li><a href="{{ route('admin.clients.import') }}" @class(['active' => request()->routeIs('admin.clients.import*')])>@include('partials.icon', ['name' => 'file'])Import clients</a></li>
                 <li><a href="{{ route('admin.plans.index') }}" @class(['active' => request()->routeIs('admin.plans.*')])>@include('partials.icon', ['name' => 'layers'])Plans</a></li>
             </ul>
 

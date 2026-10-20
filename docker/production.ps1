@@ -11,11 +11,12 @@
     .\docker\production.ps1 logs queue     # follow one service's log (app, scheduler, queue, db, quick-tunnel, tunnel)
     .\docker\production.ps1 test-router    # log in to the MikroTik once
     .\docker\production.ps1 sync-router    # first run after connecting: create missing PPPoE accounts, apply every status
+    .\docker\production.ps1 backup         # database backup right now (one also runs every night)
     .\docker\production.ps1 stop
 #>
 param(
     [Parameter(Position = 0)]
-    [ValidateSet('start', 'stop', 'status', 'url', 'apply-url', 'logs', 'test-router', 'sync-router')]
+    [ValidateSet('start', 'stop', 'status', 'url', 'apply-url', 'logs', 'test-router', 'sync-router', 'backup')]
     [string]$Action = 'status',
 
     [Parameter(Position = 1)]
@@ -114,5 +115,10 @@ switch ($Action) {
     }
     'sync-router' {
         Invoke-Compose @('exec', 'app', 'php', 'artisan', 'mikrotik:sync', '--now', '--create-missing')
+    }
+    'backup' {
+        Invoke-Compose @('exec', 'backup', 'bash', '/backup.sh', 'now')
+        $dir = Get-Setting 'BACKUP_DIR'; if (-not $dir) { $dir = '.\backups' }
+        Write-Host "Backups are in $dir - copy them off this PC too (USB drive, Google Drive, OneDrive)." -ForegroundColor Green
     }
 }

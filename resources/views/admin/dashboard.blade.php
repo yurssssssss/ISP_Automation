@@ -99,12 +99,25 @@
             Cut-offs and reconnections reach the MikroTik only while a worker runs: <code>php artisan queue:work</code>.
         </div>
     @endif
+    @php($backup = $automation['backup'])
+    @if ($backup && $backup['stale'])
+        <div class="alert alert-warning rounded-0 border-0 small mb-0">
+            <strong>{{ $backup['at'] ? 'No database backup since '.$backup['at']->format('M j, g:i A').'.' : 'No database backup yet.' }}</strong>
+            Backups run every night; check the backup service with <code>.\docker\production.ps1 logs backup</code>, or make one now with <code>.\docker\production.ps1 backup</code>.
+        </div>
+    @endif
     @if ($queue['failed'] > 0)
         <div class="alert alert-danger rounded-0 border-0 small mb-0">
             {{ $queue['failed'] }} background {{ Str::plural('job', $queue['failed']) }} failed. See them with <code>php artisan queue:failed</code> and retry with <code>php artisan queue:retry all</code>.
         </div>
     @endif
 
+    @if ($backup && ! $backup['stale'])
+        <div class="panel-body py-2 small text-body-secondary border-top">
+            Database backup: <strong class="text-body">{{ $backup['at']->format('M j, g:i A') }}</strong>
+            ({{ $backup['bytes'] >= 1048576 ? number_format($backup['bytes'] / 1048576, 1).' MB' : number_format($backup['bytes'] / 1024, 0).' KB' }}) · {{ $backup['count'] }} {{ Str::plural('copy', $backup['count']) }} kept
+        </div>
+    @endif
     <div class="row g-0">
         @foreach ($automation['tasks'] as $task)
             <div class="col-md-6 col-xl-3">

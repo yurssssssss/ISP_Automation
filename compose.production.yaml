@@ -35,6 +35,12 @@ services:
     # else comes in through the tunnel.
     ports:
       - "127.0.0.1:${APP_PORT:-8080}:80"
+    # Read-only, so the dashboard can show the latest backup. Outside
+    # storage/: the entrypoint changes ownership of everything in there.
+    volumes:
+      - ${BACKUP_DIR:-./backups}:/backups:ro
+    environment:
+      BACKUP_PATH: /backups
     healthcheck:
       test: ["CMD", "curl", "-fsS", "http://localhost/up"]
       interval: 30s
@@ -55,6 +61,25 @@ services:
     environment:
       CONTAINER_ROLE: worker
     command: ["php", "artisan", "queue:work", "--tries=3", "--backoff=30", "--max-time=3600"]
+
+  # Daily database copy into ./backups (docker/backup.sh). The app shows the
+  # latest one on the dashboard. Copy that folder off this PC as well.
+  backup:
+    image: mysql:8.4
+    restart: unless-stopped
+    entrypoint: ["bash", "/backup.sh"]
+    environment:
+      TZ: Asia/Manila
+      MYSQL_PWD: ${DB_ROOT_PASSWORD:?set DB_ROOT_PASSWORD in .env.production}
+      MYSQL_DATABASE: ${DB_DATABASE:?set DB_DATABASE in .env.production}
+      BACKUP_AT: ${BACKUP_AT:-02:00}
+      BACKUP_KEEP_DAYS: ${BACKUP_KEEP_DAYS:-14}
+    volumes:
+      - ./docker/backup.sh:/backup.sh:ro
+      - ${BACKUP_DIR:-./backups}:/backups
+    depends_on:
+      db:
+        condition: service_healthy
 
   db:
     image: mysql:8.4

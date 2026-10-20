@@ -37,6 +37,13 @@ return [
     ],
 
     /*
+    | Where the daily database backups land (the "backup" service in
+    | compose.production.yaml). The dashboard shows the latest one; when the
+    | folder doesn't exist (local development) it shows nothing.
+    */
+    'backup_path' => env('BACKUP_PATH', storage_path('backups')),
+
+    /*
     | Office contact details shown on the public front page. Leave any of
     | them empty to hide that line.
     */

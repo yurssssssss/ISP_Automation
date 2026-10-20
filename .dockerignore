@@ -14,3 +14,4 @@ bootstrap/cache/*.php
 .phpunit.cache
 .claude
 .mcp.json
+backups

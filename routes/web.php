@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\Admin\AutomationController;
 use App\Http\Controllers\Admin\ClientController;
+use App\Http\Controllers\Admin\ClientImportController;
 use App\Http\Controllers\Admin\DashboardController;
 use App\Http\Controllers\Admin\PlanController;
 use App\Http\Controllers\Auth\EmailVerificationController;
@@ -50,6 +51,9 @@ Route::middleware(['auth', 'active'])->group(function () {
             Route::post('/automation/run', [AutomationController::class, 'run'])->middleware('throttle:6,1')->name('automation.run');
             Route::post('/router/test', [AutomationController::class, 'testRouter'])->middleware('throttle:6,1')->name('router.test');
             Route::get('/clients/create', [ClientController::class, 'create'])->name('clients.create');
+            Route::get('/clients/import', [ClientImportController::class, 'show'])->name('clients.import');
+            Route::get('/clients/import/template', [ClientImportController::class, 'template'])->name('clients.import.template');
+            Route::post('/clients/import', [ClientImportController::class, 'store'])->middleware('throttle:10,1')->name('clients.import.store');
             Route::post('/clients', [ClientController::class, 'store'])->name('clients.store');
             Route::get('/plans', [PlanController::class, 'index'])->name('plans.index');
             Route::post('/plans', [PlanController::class, 'store'])->name('plans.store');
