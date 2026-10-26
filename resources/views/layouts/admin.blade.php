@@ -10,6 +10,7 @@
     <link rel="stylesheet" href="{{ asset('css/site.css') }}">
 </head>
 <body class="site admin">
+@include('partials.demo-banner')
 @php($admin = auth()->user())
 <div class="admin-shell">
     <aside class="admin-sidebar offcanvas-lg offcanvas-start" tabindex="-1" id="adminSidebar" aria-label="Admin menu">

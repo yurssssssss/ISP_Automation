@@ -10,6 +10,7 @@
     <link rel="stylesheet" href="{{ asset('css/site.css') }}">
 </head>
 <body class="site auth-page">
+@include('partials.demo-banner')
 <header class="auth-header">
     <div class="container d-flex justify-content-between align-items-center">
         <a class="brand" href="{{ route('landing') }}">

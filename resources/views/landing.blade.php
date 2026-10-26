@@ -11,6 +11,7 @@
     <link rel="stylesheet" href="{{ asset('css/site.css') }}">
 </head>
 <body class="site">
+@include('partials.demo-banner')
 <a class="visually-hidden-focusable position-absolute top-0 start-0 m-2 btn btn-light z-3" href="#main">Skip to content</a>
 
 @if (isset($contact['phone']) || isset($contact['email']))

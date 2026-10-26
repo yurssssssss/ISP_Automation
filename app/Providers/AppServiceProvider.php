@@ -30,14 +30,25 @@ class AppServiceProvider extends ServiceProvider
             new Dsn('brevo+api', 'default', config('services.brevo.key'))
         ));
 
-        // Choosing a password (reset / first password): 8+ characters with an upper- and a
-        // lowercase letter, a number and a symbol.
+        // A public demo link must never send real emails, take payments or
+        // touch a router (sample customers would become real PPPoE accounts).
+        if (config('isp.demo')) {
+            config([
+                'mail.default' => 'log',
+                'services.paymongo.secret_key' => null,
+                'isp.mikrotik.host' => null,
+                'isp.mikrotik.password' => '',
+            ]);
+        }
+
         // `composer run dev` also starts the scheduler (billing automation);
         // the queue worker is one of the defaults.
         if ($this->app->runningInConsole()) {
             DevCommands::artisan('schedule:work', 'scheduler');
         }
 
+        // Choosing a password (reset / first password): 8+ characters with an upper- and a
+        // lowercase letter, a number and a symbol.
         Password::defaults(fn () => Password::min(8)->mixedCase()->numbers()->symbols());
 
         // POST /login — per IP across all accounts (stops one machine from

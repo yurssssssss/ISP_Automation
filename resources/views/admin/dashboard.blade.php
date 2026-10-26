@@ -58,7 +58,11 @@
             <p>Bills, reminders, cut-offs and reconnections happen on their own.</p>
         </div>
         <div class="d-flex flex-wrap align-items-center gap-2">
-            <span @class(['status', 'status-active' => $scheduler['running'], 'status-suspended' => ! $scheduler['running']])>Scheduler: {{ $scheduler['running'] ? 'running' : 'not running' }}</span>
+            @if (config('isp.demo') && ! $scheduler['running'])
+                <span class="status status-other">Scheduler: off (demo)</span>
+            @else
+                <span @class(['status', 'status-active' => $scheduler['running'], 'status-suspended' => ! $scheduler['running']])>Scheduler: {{ $scheduler['running'] ? 'running' : 'not running' }}</span>
+            @endif
             <span @class(['status', 'status-active' => ! $queue['stuck'], 'status-suspended' => $queue['stuck']])>
                 Worker: {{ $queue['mode'] === 'sync' ? 'instant' : ($queue['stuck'] ? $queue['pending'].' waiting' : 'ok') }}
             </span>
@@ -81,13 +85,17 @@
         </div>
     </div>
 
-    @if (! $router['configured'])
+    @if (config('isp.demo'))
+        <div class="alert alert-info rounded-0 border-0 small mb-0">
+            <strong>Demo:</strong> no MikroTik is connected and the nightly tasks don't run on their own. Click <strong>Run checks now</strong> to see what midnight would do — cut-offs are recorded here, as they would be sent to the router.
+        </div>
+    @elseif (! $router['configured'])
         <div class="alert alert-info rounded-0 border-0 small mb-0">
             <strong>No router connected yet.</strong> Billing still runs: cut-offs and reconnections are recorded here and applied to the MikroTik once it's connected.
             Fill in <code>MIKROTIK_HOST</code>, <code>MIKROTIK_USERNAME</code> and <code>MIKROTIK_PASSWORD</code>, restart, click <strong>Test router</strong>, then run <code>php artisan mikrotik:sync --now --create-missing</code> once.
         </div>
     @endif
-    @if (! $scheduler['running'])
+    @if (! $scheduler['running'] && ! config('isp.demo'))
         <div class="alert alert-warning rounded-0 border-0 small mb-0">
             <strong>The scheduler isn't running</strong>{{ $scheduler['lastSeen'] ? ' (last seen '.$scheduler['lastSeen']->diffForHumans().')' : '' }}, so nothing below happens on its own.
             Start it with <code>php artisan schedule:work</code> (or <code>composer run dev</code>). On a server, add the cron entry from <code>routes/console.php</code>.

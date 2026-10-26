@@ -1,0 +1,38 @@
+# With this file present Vercel ignores .gitignore, so every secret and
+# local-only folder is listed again here.
+
+# Secrets (APP_KEY and passwords go in the Vercel dashboard instead)
+.env
+.env.*
+/storage/*.key
+/auth.json
+
+# Installed on Vercel by the vercel-php runtime
+/vendor
+/node_modules
+
+# Local data and caches
+/backups
+/storage/logs/*
+/storage/pail
+/storage/framework/cache/data/*
+/storage/framework/sessions/*
+/storage/framework/views/*
+/bootstrap/cache/*.php
+/database/*.sqlite
+/public/hot
+/public/storage
+*.log
+
+# Not needed to run the site
+/.git
+/tests
+/docker
+/compose*.yaml
+/Dockerfile
+/.dockerignore
+/.claude
+/.ai
+/.mcp.json
+/.phpunit.cache
+/.phpunit.result.cache

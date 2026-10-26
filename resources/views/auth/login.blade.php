@@ -6,6 +6,14 @@
 <h1 class="auth-title">Welcome back</h1>
 <p class="auth-sub">Sign in to your {{ config('app.name') }} account</p>
 
+@if (config('isp.demo'))
+    <div class="alert alert-info small rounded-4">
+        <strong>Demo accounts</strong> — sample data, look around freely:<br>
+        Admin: <code>{{ \App\Support\Demo::ADMIN_EMAIL }}</code> / <code>{{ \App\Support\Demo::ADMIN_PASSWORD }}</code><br>
+        Customer: <code>{{ \App\Support\Demo::CLIENT_EMAIL }}</code> / <code>{{ \App\Support\Demo::CLIENT_PASSWORD }}</code>
+    </div>
+@endif
+
 <form method="POST" action="{{ route('login') }}" novalidate>
     @csrf
     <div class="mb-3">

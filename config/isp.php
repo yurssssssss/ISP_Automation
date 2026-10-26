@@ -28,6 +28,15 @@ return [
     'suspended_profile' => env('ISP_SUSPENDED_PROFILE', 'suspended'),
 
     /*
+    | Demo mode: a showcase copy with sample data (App\Support\Demo). Emails
+    | go to the log only and online payments are off, whatever else is set.
+    */
+    'demo' => (bool) env('DEMO_MODE', false),
+
+    // Vercel copy only: create and seed its own SQLite file daily (wipes it!).
+    'demo_auto_seed' => (bool) env('DEMO_AUTO_SEED', false),
+
+    /*
     | The first admin login, created by `php artisan db:seed`
     | (AdminUserSeeder). Locally, an empty password means Admin#12345.
     */

@@ -3,6 +3,7 @@
 use App\Http\Middleware\EnsureAccountActive;
 use App\Http\Middleware\EnsureEmailIsVerified;
 use App\Http\Middleware\EnsureRole;
+use App\Http\Middleware\PrepareDemoDatabase;
 use App\Http\Middleware\PreventBackHistory;
 use App\Http\Middleware\SecurityHeaders;
 use App\Http\Middleware\UseCloudflareClientIp;
@@ -19,6 +20,9 @@ return Application::configure(basePath: dirname(__DIR__))
     )
     ->withMiddleware(function (Middleware $middleware): void {
         $middleware->web(append: [SecurityHeaders::class, PreventBackHistory::class]);
+
+        // Vercel demo: builds its own SQLite database (no-op everywhere else).
+        $middleware->prepend(PrepareDemoDatabase::class);
 
         $middleware->alias([
             'role' => EnsureRole::class,
@@ -39,8 +43,12 @@ return Application::configure(basePath: dirname(__DIR__))
         // X-Forwarded-For header to dodge the limits. Behind Cloudflare the
         // real visitor comes from CF-Connecting-IP (UseCloudflareClientIp),
         // because X-Forwarded-For can start with a value the visitor made up.
+        // Vercel (VERCEL=1) writes X-Forwarded-For itself and has no
+        // Cloudflare in front, so there CF-Connecting-IP is not trusted.
         if ($proxies = env('TRUSTED_PROXIES')) {
-            $middleware->prepend(UseCloudflareClientIp::class);
+            if (! env('VERCEL')) {
+                $middleware->prepend(UseCloudflareClientIp::class);
+            }
             $middleware->trustProxies(at: $proxies === '*' ? '*' : explode(',', $proxies));
         }
     })

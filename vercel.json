@@ -1,0 +1,39 @@
+{
+    "$schema": "https://openapi.vercel.sh/vercel.json",
+    "framework": null,
+    "installCommand": "echo \"PHP packages are installed by the vercel-php runtime\"",
+    "buildCommand": "echo \"No build step: CSS and JS are plain files in public/\"",
+    "outputDirectory": "public",
+    "regions": ["sin1"],
+    "functions": {
+        "api/index.php": { "runtime": "vercel-php@0.7.4", "maxDuration": 30 }
+    },
+    "routes": [
+        { "src": "/index\\.php(?:/.*)?", "dest": "/api/index.php" },
+        { "src": "/\\.htaccess", "status": 404 },
+        { "handle": "filesystem" },
+        { "src": "/(.*)", "dest": "/api/index.php" }
+    ],
+    "env": {
+        "APP_ENV": "production",
+        "APP_DEBUG": "false",
+        "DEMO_MODE": "true",
+        "DEMO_AUTO_SEED": "true",
+        "APP_CONFIG_CACHE": "/tmp/config.php",
+        "APP_EVENTS_CACHE": "/tmp/events.php",
+        "APP_PACKAGES_CACHE": "/tmp/packages.php",
+        "APP_ROUTES_CACHE": "/tmp/routes.php",
+        "APP_SERVICES_CACHE": "/tmp/services.php",
+        "VIEW_COMPILED_PATH": "/tmp",
+        "LOG_CHANNEL": "stderr",
+        "DB_CONNECTION": "sqlite",
+        "DB_DATABASE": "/tmp/demo.sqlite",
+        "SESSION_DRIVER": "cookie",
+        "SESSION_SECURE_COOKIE": "true",
+        "CACHE_STORE": "database",
+        "QUEUE_CONNECTION": "sync",
+        "MAIL_MAILER": "log",
+        "BCRYPT_ROUNDS": "10",
+        "TRUSTED_PROXIES": "*"
+    }
+}
