@@ -47,6 +47,7 @@ class ClientImportController extends Controller
         $request->validate([
             'file' => ['required', 'file', 'mimes:csv,txt', 'max:2048'],
             'create_missing' => ['nullable', 'boolean'],
+            'send_welcome' => ['nullable', 'boolean'],
         ], ['file.mimes' => 'Upload a .csv file (in Excel: File → Save As → CSV UTF-8).']);
 
         $result = $import->read($request->file('file')->getRealPath());
@@ -63,6 +64,13 @@ class ClientImportController extends Controller
         $first = $subscriptions[0]->client->account_no;
         $last = end($subscriptions)->client->account_no;
         $message = count($subscriptions).' '.str('client')->plural(count($subscriptions))." imported ({$first} – {$last}). They set their portal password with \"Forgot password\" using their email.";
+
+        if ($request->boolean('send_welcome')) {
+            foreach ($subscriptions as $subscription) {
+                $onboarding->sendWelcome($subscription);
+            }
+            $message .= ' Welcome emails are on their way.';
+        }
 
         if ($request->boolean('create_missing')) {
             if ($router->isConfigured()) {

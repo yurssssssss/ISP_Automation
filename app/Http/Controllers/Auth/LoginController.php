@@ -40,8 +40,8 @@ class LoginController extends Controller
 
         $email = Str::lower(trim($credentials['email']));
         $keys = [
-            'login-fail:'.$email.'|'.$request->ip() => self::MAX_PER_IP,
-            'login-fail:'.$email => self::MAX_PER_ACCOUNT,
+            self::ipKey($email, $request->ip()) => self::MAX_PER_IP,
+            self::accountKey($email) => self::MAX_PER_ACCOUNT,
         ];
 
         foreach ($keys as $key => $max) {
@@ -96,6 +96,29 @@ class LoginController extends Controller
         return $intended !== '' && ($intended === $dashboard || str_starts_with($intended, $dashboard.'/'))
             ? $intended
             : $dashboard;
+    }
+
+    /**
+     * Lifts the wrong-password lockout — after a successful password reset,
+     * which the lockout message suggests ("…or reset your password").
+     */
+    public static function clearLockout(string $email, ?string $ip): void
+    {
+        $email = Str::lower(trim($email));
+        RateLimiter::clear(self::accountKey($email));
+        if ($ip) {
+            RateLimiter::clear(self::ipKey($email, $ip));
+        }
+    }
+
+    private static function accountKey(string $email): string
+    {
+        return 'login-fail:'.$email;
+    }
+
+    private static function ipKey(string $email, ?string $ip): string
+    {
+        return 'login-fail:'.$email.'|'.$ip;
     }
 
     public function logout(Request $request)

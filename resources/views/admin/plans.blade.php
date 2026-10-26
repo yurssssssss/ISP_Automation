@@ -35,6 +35,12 @@
                                 <dt>MikroTik profile</dt><dd class="font-monospace">{{ $plan->mikrotik_profile }}</dd>
                                 <dt>Subscribers</dt><dd>{{ $plan->subscriptions_count }}</dd>
                             </dl>
+                            <form method="POST" action="{{ route('admin.plans.visibility', $plan) }}" class="mt-3"
+                                  @if ($plan->is_active) data-confirm="Hide {{ $plan->name }} from the website and from new clients? Customers already on it keep it." @endif>
+                                @csrf
+                                <input type="hidden" name="is_active" value="{{ $plan->is_active ? 0 : 1 }}">
+                                <button class="btn btn-sm btn-light-outline w-100">{{ $plan->is_active ? 'Hide plan' : 'Show on website' }}</button>
+                            </form>
                         </article>
                     </div>
                 @endforeach

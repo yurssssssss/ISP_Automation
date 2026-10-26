@@ -75,6 +75,9 @@ class PasswordResetController extends Controller
         // Sign out every other device that had the old password.
         DB::table('sessions')->where('user_id', $user->id)->delete();
 
+        // The lockout message tells a locked-out person to reset; honour it.
+        LoginController::clearLockout($email, $request->ip());
+
         return redirect()->route('login')->with('status', 'Password changed. You can sign in now.');
     }
 }

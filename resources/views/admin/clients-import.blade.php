@@ -69,6 +69,11 @@
                     @error('file')<div class="invalid-feedback">{{ $message }}</div>@enderror
                     <div class="form-text">In Excel or Google Sheets: File → Save as / Download → <strong>CSV</strong>.</div>
                 </div>
+                <div class="form-check mb-3">
+                    <input class="form-check-input" type="checkbox" name="send_welcome" value="1" id="send_welcome">
+                    <label class="form-check-label" for="send_welcome">Email each customer a welcome message
+                        <span class="d-block small text-body-secondary">Brevo's free plan sends 300 emails a day: for bigger lists, import in parts on different days.</span></label>
+                </div>
                 <div class="form-check mb-4">
                     <input class="form-check-input" type="checkbox" name="create_missing" value="1" id="create_missing">
                     <label class="form-check-label" for="create_missing">Create PPPoE accounts the router doesn't have yet

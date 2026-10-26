@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\Admin\AutomationController;
+use App\Http\Controllers\Admin\ClientAccountController;
 use App\Http\Controllers\Admin\ClientController;
 use App\Http\Controllers\Admin\ClientImportController;
 use App\Http\Controllers\Admin\DashboardController;
@@ -50,13 +51,20 @@ Route::middleware(['auth', 'active'])->group(function () {
             Route::post('/invoices/{invoice}/cash', [DashboardController::class, 'recordCash'])->name('invoices.cash');
             Route::post('/automation/run', [AutomationController::class, 'run'])->middleware('throttle:6,1')->name('automation.run');
             Route::post('/router/test', [AutomationController::class, 'testRouter'])->middleware('throttle:6,1')->name('router.test');
+            Route::get('/clients', [ClientController::class, 'index'])->name('clients.index');
             Route::get('/clients/create', [ClientController::class, 'create'])->name('clients.create');
+            Route::get('/clients/{subscription}/edit', [ClientAccountController::class, 'edit'])->name('clients.edit');
+            Route::put('/clients/{subscription}', [ClientAccountController::class, 'update'])->name('clients.update');
+            Route::post('/clients/{subscription}/cancel', [ClientAccountController::class, 'cancel'])->name('clients.cancel');
+            Route::post('/clients/{subscription}/resume', [ClientAccountController::class, 'resume'])->name('clients.resume');
+            Route::post('/clients/{subscription}/portal-access', [ClientAccountController::class, 'portalAccess'])->name('clients.portal');
             Route::get('/clients/import', [ClientImportController::class, 'show'])->name('clients.import');
             Route::get('/clients/import/template', [ClientImportController::class, 'template'])->name('clients.import.template');
             Route::post('/clients/import', [ClientImportController::class, 'store'])->middleware('throttle:10,1')->name('clients.import.store');
             Route::post('/clients', [ClientController::class, 'store'])->name('clients.store');
             Route::get('/plans', [PlanController::class, 'index'])->name('plans.index');
             Route::post('/plans', [PlanController::class, 'store'])->name('plans.store');
+            Route::post('/plans/{plan}/visibility', [PlanController::class, 'visibility'])->name('plans.visibility');
         });
 
         Route::middleware('role:client')->prefix('portal')->name('portal.')->group(function () {

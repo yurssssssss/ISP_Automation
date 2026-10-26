@@ -5,8 +5,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="csrf-token" content="{{ csrf_token() }}">
     <title>@yield('title', 'Dashboard') · Admin · {{ config('app.name') }}</title>
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css">
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fontsource-variable/plus-jakarta-sans@5.1.1/index.min.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" integrity="sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH" crossorigin="anonymous">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fontsource-variable/plus-jakarta-sans@5.1.1/index.min.css" integrity="sha384-jTc/GQ1YGohJnajQ/NeAhEpgk2WtIQtwCO7hymKvteimOc1G9Aj50WfpXpkhphdA" crossorigin="anonymous">
     <link rel="stylesheet" href="{{ asset('css/site.css') }}">
 </head>
 <body class="site admin">
@@ -24,6 +24,7 @@
             <p class="admin-nav-label">Manage</p>
             <ul class="admin-nav">
                 <li><a href="{{ route('admin.dashboard') }}" @class(['active' => request()->routeIs('admin.dashboard')])>@include('partials.icon', ['name' => 'grid'])Dashboard</a></li>
+                <li><a href="{{ route('admin.clients.index') }}" @class(['active' => request()->routeIs('admin.clients.index', 'admin.clients.edit')])>@include('partials.icon', ['name' => 'users'])Clients</a></li>
                 <li><a href="{{ route('admin.clients.create') }}" @class(['active' => request()->routeIs('admin.clients.create')])>@include('partials.icon', ['name' => 'user-plus'])Add client</a></li>
                 <li><a href="{{ route('admin.clients.import') }}" @class(['active' => request()->routeIs('admin.clients.import*')])>@include('partials.icon', ['name' => 'file'])Import clients</a></li>
                 <li><a href="{{ route('admin.plans.index') }}" @class(['active' => request()->routeIs('admin.plans.*')])>@include('partials.icon', ['name' => 'layers'])Plans</a></li>
@@ -68,7 +69,7 @@
     </div>
 </div>
 
-<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js" integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz" crossorigin="anonymous"></script>
 <script src="{{ asset('js/app.js') }}"></script>
 </body>
 </html>

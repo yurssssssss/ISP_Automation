@@ -160,7 +160,7 @@
                     <td>
                         <div class="cell-person">
                             <span class="avatar avatar-soft">{{ Str::upper(Str::substr($s->client->name, 0, 1)) }}</span>
-                            <div><strong>{{ $s->client->name }}</strong><small>{{ $s->client->account_no }}</small></div>
+                            <div><a href="{{ route('admin.clients.edit', $s) }}" class="text-body text-decoration-none"><strong>{{ $s->client->name }}</strong></a><small>{{ $s->client->account_no }}</small></div>
                         </div>
                     </td>
                     <td>{{ $s->plan->name }}<span class="cell-sub">{{ $s->plan->speed_mbps }} Mbps · ₱{{ number_format((float) $s->plan->price, 2) }}</span></td>

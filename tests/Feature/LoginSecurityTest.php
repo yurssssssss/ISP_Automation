@@ -125,6 +125,31 @@ class LoginSecurityTest extends TestCase
         $this->assertGuest();
     }
 
+    public function test_password_reset_lifts_the_lockout(): void
+    {
+        Notification::fake();
+        $user = User::factory()->create();
+        for ($i = 0; $i < 10; $i++) {
+            $this->post('/login', ['email' => $user->email, 'password' => 'wrong'.$i]);
+        }
+        $this->post('/login', ['email' => $user->email, 'password' => 'password1'])->assertSessionHasErrors('email');
+
+        $this->post(route('password.email'), ['email' => $user->email]);
+        $code = null;
+        Notification::assertSentTo($user, EmailCodeNotification::class, function ($notification) use (&$code) {
+            $code = $notification->code;
+
+            return true;
+        });
+        $this->post(route('password.update'), [
+            'email' => $user->email, 'code' => $code,
+            'password' => 'NewPass#123', 'password_confirmation' => 'NewPass#123',
+        ])->assertRedirect(route('login'));
+
+        $this->post('/login', ['email' => $user->email, 'password' => 'NewPass#123'])->assertRedirect(route('portal.dashboard'));
+        $this->assertAuthenticatedAs($user);
+    }
+
     public function test_ip_is_throttled_across_accounts(): void
     {
         for ($i = 0; $i < 20; $i++) {

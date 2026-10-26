@@ -5,6 +5,7 @@ use App\Http\Middleware\EnsureEmailIsVerified;
 use App\Http\Middleware\EnsureRole;
 use App\Http\Middleware\PreventBackHistory;
 use App\Http\Middleware\SecurityHeaders;
+use App\Http\Middleware\UseCloudflareClientIp;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
@@ -35,8 +36,11 @@ return Application::configure(basePath: dirname(__DIR__))
         // Behind Railway / a tunnel, set TRUSTED_PROXIES=* so request()->ip()
         // (used by the rate limits) is the real client. Left unset when the
         // app is reached directly, so nobody can fake their IP with an
-        // X-Forwarded-For header to dodge the limits.
+        // X-Forwarded-For header to dodge the limits. Behind Cloudflare the
+        // real visitor comes from CF-Connecting-IP (UseCloudflareClientIp),
+        // because X-Forwarded-For can start with a value the visitor made up.
         if ($proxies = env('TRUSTED_PROXIES')) {
+            $middleware->prepend(UseCloudflareClientIp::class);
             $middleware->trustProxies(at: $proxies === '*' ? '*' : explode(',', $proxies));
         }
     })

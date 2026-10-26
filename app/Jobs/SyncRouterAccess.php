@@ -88,9 +88,21 @@ class SyncRouterAccess implements ShouldBeUniqueUntilProcessing, ShouldQueue
             $message = "Profile set to \"{$profile}\"".($kicked ? ", {$kicked} session(s) reconnected" : '');
         } else {
             $router->setDisabled($username, ! $enable, $service);
-            // Disabling the account doesn't end a session already connected.
-            $kicked = $enable ? 0 : $router->kick($username, $service);
-            $message = ($enable ? 'Account enabled' : 'Account disabled').($kicked ? ", {$kicked} session(s) dropped" : '');
+            $kicked = 0;
+            $profileNote = '';
+
+            if ($enable && $service === 'pppoe' && ($account['profile'] ?? null) !== $subscription->plan->mikrotik_profile) {
+                // Plan changed (or someone edited it in Winbox): the speed
+                // profile applies on the next connect, so reconnect them.
+                $router->setProfile($username, $subscription->plan->mikrotik_profile, $service);
+                $kicked = $router->kick($username, $service);
+                $profileNote = ", profile set to \"{$subscription->plan->mikrotik_profile}\"";
+            } elseif (! $enable) {
+                // Disabling the account doesn't end a session already connected.
+                $kicked = $router->kick($username, $service);
+            }
+
+            $message = ($enable ? 'Account enabled' : 'Account disabled').$profileNote.($kicked ? ", {$kicked} session(s) ".($enable ? 'reconnected' : 'dropped') : '');
         }
 
         $this->log($subscription, $enable, true, $message);

@@ -78,6 +78,10 @@
                         <input class="form-check-input" type="checkbox" name="create_on_router" value="1" id="create_on_router" @checked(old('create_on_router', true))>
                         <label class="form-check-label" for="create_on_router">Also create this account on the MikroTik router <span class="d-block small text-body-secondary">Skipped if it already exists.</span></label>
                     </div>
+                    <div class="form-check mb-3">
+                        <input class="form-check-input" type="checkbox" name="send_welcome" value="1" id="send_welcome" @checked(old('send_welcome', true))>
+                        <label class="form-check-label" for="send_welcome">Email them a welcome message <span class="d-block small text-body-secondary">Account number, plan, and how to set their portal password.</span></label>
+                    </div>
                     <div class="mb-4">
                         <label class="form-label" for="auto_suspend">Cut-off when unpaid</label>
                         <select id="auto_suspend" name="auto_suspend" class="form-select">

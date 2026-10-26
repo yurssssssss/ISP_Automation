@@ -6,13 +6,22 @@
 <p class="text-body-secondary">Account {{ $client->account_no }}</p>
 
 @foreach ($subscriptions as $s)
-    <div class="card mb-3 border-{{ $s->isSuspended() ? 'danger' : 'success' }}">
+    @php
+        [$tone, $label] = match ($s->status) {
+            'suspended' => ['danger', 'Suspended — pay to reconnect'],
+            'cancelled' => ['secondary', 'Service cancelled'],
+            default => ['success', 'Connected'],
+        };
+    @endphp
+    <div class="card mb-3 border-{{ $tone }}">
         <div class="card-body d-flex flex-wrap gap-4 align-items-center">
             <div><div class="small text-body-secondary">Plan</div><div class="fw-semibold">{{ $s->plan->name }} · {{ $s->plan->speed_mbps }} Mbps</div></div>
             <div><div class="small text-body-secondary">Monthly</div><div class="fw-semibold">₱{{ number_format((float) $s->plan->price, 2) }}</div></div>
-            <div><div class="small text-body-secondary">Next due</div><div class="fw-semibold">{{ $s->next_due_date->format('F j, Y') }}</div></div>
+            @if ($s->status !== 'cancelled')
+                <div><div class="small text-body-secondary">Next due</div><div class="fw-semibold">{{ $s->next_due_date->format('F j, Y') }}</div></div>
+            @endif
             <div><div class="small text-body-secondary">Status</div>
-                <span class="badge fs-6 text-bg-{{ $s->isSuspended() ? 'danger' : 'success' }}">{{ $s->isSuspended() ? 'Suspended — pay to reconnect' : 'Connected' }}</span></div>
+                <span class="badge fs-6 text-bg-{{ $tone }}">{{ $label }}</span></div>
         </div>
     </div>
 @endforeach

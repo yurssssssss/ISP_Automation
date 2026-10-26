@@ -4,6 +4,7 @@ namespace App\Console\Commands;
 
 use App\Mail\InvoiceReminder;
 use App\Models\Invoice;
+use App\Models\Subscription;
 use App\Support\Automation;
 use Illuminate\Console\Attributes\Description;
 use Illuminate\Console\Attributes\Signature;
@@ -21,6 +22,8 @@ class SendReminders extends Command
         // A window, not an exact day, so a missed run still sends tomorrow.
         Invoice::open()
             ->whereNull('reminded_at')
+            // A cancelled customer's old balance isn't chased by email.
+            ->whereHas('subscription', fn ($q) => $q->where('status', '!=', Subscription::CANCELLED))
             ->whereDate('due_date', '>=', today()->toDateString())
             ->whereDate('due_date', '<=', today()->addDays(config('isp.reminder_days'))->toDateString())
             ->with('subscription.client.user', 'subscription.plan')

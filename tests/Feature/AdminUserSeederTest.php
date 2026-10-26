@@ -58,6 +58,17 @@ class AdminUserSeederTest extends TestCase
         $this->assertDatabaseCount('users', 0);
     }
 
+    public function test_live_server_refuses_a_weak_admin_password(): void
+    {
+        $this->app['env'] = 'production';
+        config(['isp.admin' => ['email' => 'admin@isp.test', 'password' => 'admin123']]);
+
+        $this->artisan('db:seed', ['--class' => AdminUserSeeder::class, '--force' => true])
+            ->expectsOutputToContain('ADMIN_PASSWORD is too weak');
+
+        $this->assertDatabaseCount('users', 0);
+    }
+
     public function test_existing_admin_keeps_the_password_they_chose(): void
     {
         $admin = User::factory()->admin()->create(['email' => 'admin@isp.test', 'password' => 'Changed#Later1']);

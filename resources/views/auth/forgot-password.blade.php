@@ -8,7 +8,7 @@
     @csrf
     <div class="mb-3">
         <label class="form-label" for="email">Email</label>
-        <input id="email" name="email" type="email" value="{{ old('email') }}" class="form-control @error('email') is-invalid @enderror" required autofocus
+        <input id="email" name="email" type="email" value="{{ old('email', is_string(request()->query('email')) ? request()->query('email') : '') }}" class="form-control @error('email') is-invalid @enderror" required autofocus
                data-email-check="existing" data-email-check-url="{{ route('email.check') }}">
         @error('email')<div class="invalid-feedback">{{ $message }}</div>@enderror
     </div>

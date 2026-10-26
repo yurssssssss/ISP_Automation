@@ -4,7 +4,9 @@ namespace Database\Seeders;
 
 use App\Models\User;
 use Illuminate\Database\Seeder;
+use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Str;
+use Illuminate\Validation\Rules\Password;
 
 /**
  * The first admin login (config/isp.php → admin). Only creates it: an admin
@@ -36,6 +38,14 @@ class AdminUserSeeder extends Seeder
 
         if ($usesDefault && ! app()->isLocal()) {
             $this->command?->error('Set ADMIN_PASSWORD in .env to create the first admin.');
+
+            return;
+        }
+
+        // A live system's admin password must pass the same rules as everyone else's.
+        if (! $usesDefault && ! app()->isLocal()
+            && Validator::make(['password' => $password], ['password' => Password::defaults()])->fails()) {
+            $this->command?->error('ADMIN_PASSWORD is too weak: use 8+ characters with upper- and lowercase letters, a number and a symbol.');
 
             return;
         }

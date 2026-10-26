@@ -179,6 +179,63 @@ class Billing
         SyncRouterAccess::dispatch($subscription);
     }
 
+    /**
+     * Ends the service: cut on the router, no more bills, reminders or
+     * cut-off runs. Bills already issued stay owed (and payable).
+     */
+    public function cancel(Subscription $subscription): void
+    {
+        if ($subscription->status === Subscription::CANCELLED) {
+            return;
+        }
+
+        $subscription->update(['status' => Subscription::CANCELLED, 'suspended_at' => null, 'suspension_hold_until' => null]);
+        $subscription->client()->update(['status' => 'inactive']);
+        SyncRouterAccess::dispatch($subscription);
+    }
+
+    /** Starts a cancelled service again, billing from $nextDue. */
+    public function resume(Subscription $subscription, CarbonInterface $nextDue): void
+    {
+        if ($subscription->status !== Subscription::CANCELLED) {
+            return;
+        }
+
+        $subscription->update(['status' => Subscription::ACTIVE, 'next_due_date' => $nextDue->toDateString(), 'suspended_at' => null]);
+        $subscription->client()->update(['status' => 'active']);
+        SyncRouterAccess::dispatch($subscription);
+    }
+
+    /**
+     * Moves the billing day. The bill already issued for the current cycle
+     * (if any, and still unpaid) moves with it, so the cut-off follows the
+     * new date; a fresh reminder goes out before it.
+     */
+    public function changeDueDate(Subscription $subscription, CarbonInterface $nextDue): void
+    {
+        $old = $subscription->next_due_date->toDateString();
+        $new = $nextDue->copy()->startOfDay();
+        if ($old === $new->toDateString()) {
+            return;
+        }
+
+        DB::transaction(function () use ($subscription, $old, $new) {
+            $current = $subscription->invoices()->open()->whereDate('due_date', $old)->first();
+            $clash = $subscription->invoices()->whereDate('due_date', $new->toDateString())->exists();
+
+            if ($current && ! $clash) {
+                $current->update([
+                    'due_date' => $new,
+                    'period_start' => $new,
+                    'period_end' => $new->copy()->addMonthNoOverflow()->subDay(),
+                    'reminded_at' => null,
+                ]);
+            }
+
+            $subscription->update(['next_due_date' => $new]);
+        });
+    }
+
     /** Has an open invoice past its due date plus the grace period. */
     public function hasOverdue(Subscription $subscription): bool
     {

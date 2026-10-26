@@ -24,4 +24,19 @@ class PlanController extends Controller
 
         return back()->with('status', 'Plan added.');
     }
+
+    /**
+     * Hidden plans leave the public site, Add client and the CSV import, but
+     * keep working for customers already on them. Plans can't be deleted
+     * while anyone uses them (the database refuses), so this is how an old
+     * or test plan is retired.
+     */
+    public function visibility(Request $request, Plan $plan)
+    {
+        $plan->update(['is_active' => $request->validate(['is_active' => ['required', 'boolean']])['is_active']]);
+
+        return back()->with('status', $plan->is_active
+            ? "{$plan->name} is shown on the website and can be chosen for new clients."
+            : "{$plan->name} is hidden. Customers already on it keep it.");
+    }
 }

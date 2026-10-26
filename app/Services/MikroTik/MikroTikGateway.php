@@ -63,6 +63,11 @@ class MikroTikGateway implements RouterGateway
         $this->set($username, $service, ['profile' => $profile]);
     }
 
+    public function setPassword(string $username, string $password, string $service = 'pppoe'): void
+    {
+        $this->set($username, $service, ['password' => $password]);
+    }
+
     public function kick(string $username, string $service = 'pppoe'): int
     {
         $menu = self::menu($service);

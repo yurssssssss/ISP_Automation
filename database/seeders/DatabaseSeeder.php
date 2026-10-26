@@ -9,17 +9,21 @@ use Illuminate\Database\Seeder;
 class DatabaseSeeder extends Seeder
 {
     /**
-     * The first admin login (AdminUserSeeder), three starter
-     * plans (their profile names must exist in /ppp/profile on the router),
-     * and — locally only — one demo subscriber whose PPPoE username is
+     * The first admin login (AdminUserSeeder) and — locally only — three
+     * sample plans plus one demo subscriber whose PPPoE username is
      * MIKROTIK_TEST_USER, for trying suspend/restore against a real router.
      */
     public function run(): void
     {
         $this->call(AdminUserSeeder::class);
 
-        foreach ([['Fiber 20', 20, 999, '20M'], ['Fiber 50', 50, 1499, '50M'], ['Fiber 100', 100, 1999, '100M']] as [$name, $speed, $price, $profile]) {
-            Plan::firstOrCreate(['name' => $name], ['speed_mbps' => $speed, 'price' => $price, 'mikrotik_profile' => $profile]);
+        // Sample plans for the demo only. A live system starts with none, so
+        // made-up prices and router profiles never appear on its public site;
+        // the admin adds the real plans on the Plans page.
+        if (app()->isLocal()) {
+            foreach ([['Fiber 20', 20, 999, '20M'], ['Fiber 50', 50, 1499, '50M'], ['Fiber 100', 100, 1999, '100M']] as [$name, $speed, $price, $profile]) {
+                Plan::firstOrCreate(['name' => $name], ['speed_mbps' => $speed, 'price' => $price, 'mikrotik_profile' => $profile]);
+            }
         }
 
         if (app()->isLocal() && ($username = env('MIKROTIK_TEST_USER'))) {

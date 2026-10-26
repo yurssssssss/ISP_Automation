@@ -2,10 +2,13 @@
 
 namespace App\Services;
 
+use App\Mail\ClientWelcome;
 use App\Models\Client;
 use App\Models\Subscription;
 use App\Models\User;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
 
@@ -35,6 +38,18 @@ class ClientOnboarding
             'next_due_date' => ['required', 'date', 'after_or_equal:today'],
             'auto_suspend' => ['nullable', 'boolean'],
         ];
+    }
+
+    /** Queues the "your account is ready" email. A mail problem never blocks adding the customer. */
+    public function sendWelcome(Subscription $subscription): void
+    {
+        $user = $subscription->client->user;
+
+        try {
+            Mail::to($user->email, $user->name)->queue(new ClientWelcome($subscription));
+        } catch (\Throwable $e) {
+            Log::error('Welcome email failed', ['subscription' => $subscription->id, 'error' => $e->getMessage()]);
+        }
     }
 
     /**

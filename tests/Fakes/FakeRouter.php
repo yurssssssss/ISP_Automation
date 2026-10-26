@@ -76,6 +76,12 @@ class FakeRouter implements RouterGateway
         $this->accounts[$username]['profile'] = $profile;
     }
 
+    public function setPassword(string $username, string $password, string $service = 'pppoe'): void
+    {
+        $this->call("password {$username}");
+        $this->passwords[$username] = $password;
+    }
+
     public function kick(string $username, string $service = 'pppoe'): int
     {
         $this->call("kick {$username}");

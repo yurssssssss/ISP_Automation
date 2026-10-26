@@ -28,6 +28,8 @@ interface RouterGateway
 
     public function setProfile(string $username, string $profile, string $service = 'pppoe'): void;
 
+    public function setPassword(string $username, string $password, string $service = 'pppoe'): void;
+
     /** Drops the user's live session(s); returns how many were removed. */
     public function kick(string $username, string $service = 'pppoe'): int;
 }
